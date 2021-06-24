@@ -6,7 +6,7 @@ function preload() {
   game.load.spritesheet('mario', 'assets/marioSmall.png', 34, 34, 7);
 }
 
-var map, layer, cursors, jumpButton, runButton, result;
+var map, worldLayer, cursors, jumpButton, runButton, result;
 
 var mario = {
   sprite: undefined,
@@ -20,9 +20,21 @@ function create() {
 
   map = game.add.tilemap('objects');
   map.addTilesetImage('items', 'tiles');
-  layer = map.createLayer('Capa de Patrones 1');
-  layer.resizeWorld();
-  layer.wrap = true;
+  worldLayer = map.createLayer('Capa de Patrones 1');
+  worldLayer.resizeWorld();
+  worldLayer.wrap = true;
+  
+  setUpCollisions();
+
+  createMario();
+
+  game.camera.follow(mario.sprite);
+
+  createInputs();
+};
+
+
+function setUpCollisions() {
   map.setCollisionBetween(14, 16);
   map.setCollisionBetween(21, 22);
   map.setCollisionBetween(27, 28);
@@ -30,7 +42,15 @@ function create() {
   map.setCollisionByIndex(13);
   map.setCollisionByIndex(17);
   map.setCollisionByIndex(40);
+}
 
+function createInputs() {
+  cursors = game.input.keyboard.createCursorKeys();
+  jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+  runButton = game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
+}
+
+function createMario() {
   mario.sprite = game.add.sprite(50, 50, 'mario');
   mario.sprite.scale.setTo(0.47, 0.47);
   mario.sprite.anchor.x = 0.5;
@@ -48,19 +68,20 @@ function create() {
   mario.sprite.animations.add('jump', [6], 10, true);
 
   mario.sprite.body.fixedRotation = true;
-
-  game.camera.follow(mario.sprite);
-  cursors = game.input.keyboard.createCursorKeys();
-  jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-  runButton = game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
-};
-
+}
 
 function update() {
-  game.physics.arcade.collide(mario.sprite, layer);
+  handleCollisions();
+  handleMovement();
+}
+
+function handleCollisions() {
+  game.physics.arcade.collide(mario.sprite, worldLayer);
+}
+
+function handleMovement() {
   mario.doNothing = true;
   if (cursors.left.isDown) {
-    //mario.sprite.body.acceleration.x = -120;
     if (mario.direction != 'left') {
       mario.sprite.scale.x *= -1;
       mario.direction = 'left';
@@ -121,7 +142,6 @@ function update() {
       mario.sprite.animations.play('wait', 20, true);
     }
   }
-
 }
 
 function render() {
