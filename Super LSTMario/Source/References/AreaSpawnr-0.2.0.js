@@ -143,6 +143,124 @@ var AreaSpawnr;
             }
             return this.mapCurrent;
         };
+
+        // AreaSpawnr.prototype.initParsedGrid = function (x, y) {
+        //     // let xMostIndex = Math.max.apply(Math, location.area.creation.map(function(thing) { return thing.x ?? 0 }));
+        //     this.parsedGrid = new Array(x).fill(null).map(() => new Array(y).fill(null));
+
+        //     console.log(`Grid initiated with ${this.parsedGrid.length}, ${this.parsedGrid[0].length}`);
+        // }
+
+        // AreaSpawnr.prototype.parse = function (prethings) {
+
+        //     // find highest x and y value
+        //     let highestXValue = 0, highestYValue = 0;
+        //     for (var thingIndex in prethings) {
+
+        //         let thingType = prethings[thingIndex];
+
+        //         let highestXInThis = Math.max.apply(Math, thingType['xInc'].map(function (preThing) { return preThing.thing.x ? Math.ceil(preThing.thing.x / 4) : 0 }));
+        //         let highestYInThis = Math.max.apply(Math, thingType['xInc'].map(function (preThing) { return preThing.thing.y ? Math.ceil(preThing.thing.y / 4) : 0 }));
+
+        //         if (highestXInThis > highestXValue) highestXValue = highestXInThis;
+        //         if (highestYInThis > highestYValue) highestYValue = highestYInThis;
+        //     }
+
+        //     let xMax = 848; // 3392 / 4
+        //     let yMax = 56;  // 224 / 4
+        //     // init parsedGrid
+        //     this.initParsedGrid(xMax, yMax);
+
+        //     // first pass -> 1 cell = 4x4
+        //     const relevantTypes = ["Solid", "Character"];
+        //     for (var thingIndex of relevantTypes) {
+
+        //         // if the type isn't included, skip this cycle
+        //         if (!prethings[thingIndex]) continue;
+
+        //         let thingType = prethings[thingIndex];
+
+        //         for (var preThing of thingType['xInc']) {
+
+        //             let thing = preThing.thing;
+        //             // Get thing indices
+        //             let xStart = Math.ceil(thing.x / 4);
+        //             let yStart = Math.ceil(thing.y / 4);
+
+        //             let xSteps = thing.width / 4;
+        //             let ySteps = thing.height / 4;
+
+        //             for (let x = xStart; x < xStart + xSteps && x < this.parsedGrid.length; x++) {
+
+        //                 try {
+        //                     let test = this.parsedGrid[x].length;
+        //                 }
+        //                 catch {
+        //                     console.log(x);
+        //                 }
+        //                 for (let y = yStart; y < yStart + ySteps && y < this.parsedGrid[x].length; y++) {
+        //                     try {
+        //                         this.parsedGrid[x][y] = thing.className;
+        //                     }
+        //                     catch {
+        //                         console.log({ thing: thing, x: { start: xStart, steps: xSteps }, y: { start: yStart, steps: ySteps }, grid: { xLen: this.parsedGrid.length, yLen: this.parsedGrid[x]?.length } });
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+
+        //     // second pass -> cluster together blocks
+        //     let newParse = new Array(xMax / 4).fill(null).map(() => new Array(yMax / 4).fill(null));
+
+        //     // cluster 4 cells together
+        //     for (let x = 0; x < this.parsedGrid.length; x += 4) {
+        //         for (let y = 0; y < this.parsedGrid[x].length; y += 4) {
+
+        //             let same = true;
+        //             let curType = -1;
+
+        //             ClusterLoop:
+        //             for (let xAdd = 0; xAdd < 4; xAdd++) {
+        //                 for (let yAdd = 0; yAdd < 4; yAdd++) {
+        //                     if (curType == -1) curType = this.parsedGrid[x + yAdd][y + xAdd];
+        //                     else if (this.parsedGrid[x + xAdd][y + yAdd] != curType) {
+        //                         same = false;
+        //                         break ClusterLoop;
+        //                     }
+        //                 }
+        //             }
+
+        //             if(same) newParse[x / 4][y / 4] = curType;
+        //             else console.log(x, y);
+        //         }
+        //     }
+
+        //     this.printParsed(newParse);
+        // }
+
+        // AreaSpawnr.prototype.printParsed = function (arr) {
+        //     var textFile = null;
+
+        //     if(!arr)
+        //         var text = this.parsedGrid.join("END OF SLICE\n");
+        //     else
+        //         var text = arr.join("END OF SLICE\n");
+        //     var data = new Blob([text], { type: 'text/plain' });
+
+        //     // If we are replacing a previously generated file we need to
+        //     // manually revoke the object URL to avoid memory leaks.
+        //     if (textFile !== null) {
+        //         window.URL.revokeObjectURL(textFile);
+        //     }
+
+        //     textFile = window.URL.createObjectURL(data);
+
+        //     // returns a URL you can use as a href
+        //     // console.log(textFile);
+        //     document.write('<a href="' + textFile + '">parsedGrid</a>');
+        // }
+
         /**
          * Goes to a particular location in the given map. Area attributes are
          * copied to the MapScreener, PreThings are loaded, and stretches and afters
@@ -154,6 +272,7 @@ var AreaSpawnr;
             var location, attribute, i;
             // Query the location from the current map and ensure it exists
             location = this.mapCurrent.locations[name];
+
             if (!location) {
                 throw new Error("Unknown location in setLocation: '" + name + "'.");
             }
@@ -171,9 +290,26 @@ var AreaSpawnr;
                 attribute = this.screenAttributes[i];
                 this.MapScreener[attribute] = this.areaCurrent[attribute];
             }
+
             // Reset the prethings object, enabling it to be used as a fresh start
             // for the new Area/Location placements
             this.prethings = this.MapsCreator.getPreThings(location.area);
+
+            // HIER IST DIE STELLE OMG
+            // this.parse(this.prethings);
+            // this.printParsed();
+
+            // let things = [], macros = [];
+            // for (var category in this.prethings) {
+            //     for (var preThing of this.prethings[category]['xInc']) {
+            //         // let reference = this.prethings[category][referenceID];
+            //         if (!things.includes(preThing.thing.thing)) things.push(preThing.thing.thing);
+            //         // if (preThing.macro && !macros.includes(preThing.macro)) macros.push(preThing.macro);
+            //     }
+            // }
+
+            // console.log({ things: things, macros: macros });
+
             // Optional: set stretch commands
             if (this.areaCurrent.stretches) {
                 this.setStretches(this.areaCurrent.stretches);
@@ -222,6 +358,8 @@ var AreaSpawnr;
          * @param left    The left-most bound to spawn within.
          */
         AreaSpawnr.prototype.spawnArea = function (direction, top, right, bottom, left) {
+
+            // AREASPAWNER 1
             if (this.onSpawn) {
                 this.applySpawnAction(this.onSpawn, true, direction, top, right, bottom, left);
             }
@@ -263,6 +401,8 @@ var AreaSpawnr;
          * @param left    The left-most bound to apply within.
          */
         AreaSpawnr.prototype.applySpawnAction = function (callback, status, direction, top, right, bottom, left) {
+
+            // AREASPAWNER 2
             var name, group, prething, mid, start, end, i;
             // For each group of PreThings currently able to spawn...
             for (name in this.prethings) {

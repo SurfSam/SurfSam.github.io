@@ -40,6 +40,7 @@ var GameStartr;
      */
     var GameStartr = (function (_super) {
         __extends(GameStartr, _super);
+
         /**
          * Initializes a new instance of the GameStartr class.
          *
@@ -92,6 +93,10 @@ var GameStartr;
             else {
                 this.reset(this, settings);
             }
+
+            this.gridHeight = 56;
+
+            this.parsedGrid = [];
         }
         /* Resets
         */
@@ -514,6 +519,7 @@ var GameStartr;
         GameStartr.prototype.onAreaUnspawn = function (GameStarter, direction, top, right, bottom, left) {
             GameStarter.AreaSpawner.unspawnArea(direction, (top + GameStarter.MapScreener.top) / GameStarter.unitsize, (right + GameStarter.MapScreener.left) / GameStarter.unitsize, (bottom + GameStarter.MapScreener.top) / GameStarter.unitsize, (left + GameStarter.MapScreener.left) / GameStarter.unitsize);
         };
+
         /**
          * Adds a new Thing to the game at a given position, relative to the top
          * left corner of the screen.
@@ -547,6 +553,7 @@ var GameStartr;
             thing.GameStarter.updateSize(thing);
             thing.GameStarter.GroupHolder.getFunctions().add[thing.groupType](thing);
             thing.placed = true;
+
             // This will typically be a TimeHandler.cycleClass call
             if (thing.onThingAdd) {
                 thing.onThingAdd(thing);
@@ -702,6 +709,8 @@ var GameStartr;
         GameStartr.prototype.onGamePause = function (GameStarter) {
             GameStarter.AudioPlayer.pauseAll();
             GameStarter.ModAttacher.fireEvent("onGamePause");
+
+            this.printParsed();
         };
         /**
          * Checks whether inputs can be fired, which by default is always true.
