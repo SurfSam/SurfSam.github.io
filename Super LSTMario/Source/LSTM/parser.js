@@ -1,5 +1,5 @@
 const RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "Koopa", "Stone", "Flag", "CastleSmall", "Coin", "PipeHorizontal", "PipeVertical", "Piranha",
-    "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "Platform", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
+    "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "Platform", "PlatformTrack", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
     "Springboard", "Coral", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon", "PlantLarge",
     "Fence", "CastleWall", "Cloud1", "PlantSmall", "Cloud2"];
 // "CastleSmall", "CastleLarge", "Floor", "Pipe", "PlatformGeneratorUp", "PlatformGeneratorDown"];
@@ -20,7 +20,7 @@ let macros = {
     "CastleLarge": _coordsCastleLarge,
     "Ceiling": macroCeiling,
     "Bridge": macroBridge,
-    "Scale": macroScale,
+    "Scale": _coordsScale,
     "PlatformGenerator": _coordsPlatformGenerator,
     // "CheepsStart": macroCheepsStart,
     // "CheepsStop": macroCheepsStop,
@@ -39,54 +39,108 @@ let oneOne = maps.library["1-1"];
 
 areaGrids = [];
 
-for (var area of oneOne["areas"]) {
-    // let everything = [];
-    // for (var mapID in maps.library) {
-    //     if (mapID == "Random") continue;
+// for (var area of oneOne["areas"]) {
+let everything = [];
+for (var mapID in maps.library) {
+    if (mapID == "Random") continue;
 
-    //     for (var area of maps.library[mapID]["areas"]) {
+    for (var area in maps.library[mapID]["areas"]) {
 
-    // Copy creation array
-    let creation = [...area["creation"]];
+        let _area = maps.library[mapID]["areas"][area];
+        // Copy creation array
+        let creation = [..._area["creation"]];
 
-    // Filter out irrelevant data
-    console.log(`Length prior to filtering: ${creation.length}`);
-    creation = creation.filter(entry =>
-        entry.macro && RELEVANT_MACROS.includes(entry.macro) ||
-        entry.thing && RELEVANT_THINGS.includes(entry.thing));
-    console.log(`Length after filtering: ${creation.length}`);
+        // Filter out irrelevant data
+        console.log(`Length prior to filtering: ${creation.length}`);
+        creation = creation.filter(entry =>
+            entry.macro && RELEVANT_MACROS.includes(entry.macro) ||
+            entry.thing && RELEVANT_THINGS.includes(entry.thing));
+        console.log(`Length after filtering: ${creation.length}`);
 
-    let resultList = [];
-    for (var reference of creation) {
+        let resultList = [];
+        for (var reference of creation) {
 
-        if (reference.macro && reference.macro != undefined) {
-            let result = macros[reference.macro](reference);
+            // console.log(reference);
+            if (reference.macro && reference.macro != undefined) {
+                let result = macros[reference.macro](reference);
 
-            resultList.push(...result);
+                resultList.push(...result);
+            }
+            else {
+
+                if (reference.thing == "Platform" && reference.sliding) {
+                    resultList.push(...macroSlidingPlatform(reference));
+                }
+                else resultList.push(reference);
+            }
         }
-        else {
-            resultList.push(reference);
+
+        console.log(`Resulting list: ${resultList.length}`);
+        // console.log(resultList);
+
+        let lastXIndex = Math.max.apply(Math, resultList.map(function (o) { return o.x ?? 0; }));
+
+        let gridArray = new Array(Math.ceil(lastXIndex / 8) + 1).fill(0).map(() => new Array(28).fill(0));
+
+        for (var entry of resultList) {
+            // if x or y are not given, pick 0 as default
+            gridArray[Math.floor((entry.x || 0) / 8)][Math.floor((entry.y || 0) / 8)] = getThingID(entry);
+
+            // gridArray[Math.floor((entry.x || 0) / 8)][Math.floor((entry.y || 0) / 8)] = entry.thing;
         }
+        // everything.push(...resultList);
+        // console.log(gridArray);
+        // printArray(gridArray);
+
+        printParsed(mapID, area, gridArray);
+        // forceSaveData(mapID, area, gridArray);
     }
-
-    console.log(`Resulting list: ${resultList.length}`);
-    // console.log(resultList);
-
-    let lastXIndex = Math.max.apply(Math, resultList.map(function (o) { return o.x ?? 0; }));
-
-    let gridArray = new Array(Math.ceil(lastXIndex / 8) + 1).fill(0).map(() => new Array(28).fill(0));
-
-    for (var entry of resultList) {
-        gridArray[Math.floor(entry.x / 8)][Math.floor(entry.y / 8)] = getThingID(entry);
-    }
-    // everything.push(...resultList);
-    console.log(gridArray);
-    printArray(gridArray);
 }
 
 // listUniqueThings(everything);
 
 //#region Utility
+
+function printParsed(location, area, arr) {
+    var textFile = null;
+
+
+    var text = JSON.stringify(arr);
+    var data = new Blob([text], { type: 'octet/stream' });
+
+    // If we are replacing a previously generated file we need to
+    // manually revoke the object URL to avoid memory leaks.
+    if (textFile !== null) {
+        window.URL.revokeObjectURL(textFile);
+    }
+
+    textFile = window.URL.createObjectURL(data);
+
+    // returns a URL you can use as a href
+    document.write(`<p><a href="${textFile}" download="${location}-${area}.json">${location}</a></p>`);
+}
+
+// function forceSaveData(location, area, data) {
+
+//     var fileName = `${location}-${area}.json`;
+//     var data = JSON.stringify(data);
+
+//     saveJSON(fileName, data, );
+// }
+
+// function saveJSON (name, data) {
+
+//     var a = document.createElement("a");
+//     var url = window.URL.createObjectURL(new Blob([data], {type: "octlet/stream"}));
+//     a.href= url;
+//     a.download = name;
+//     a.style = "display: none";
+//     document.body.appendChild(a);
+//     a.click();
+//     window.URL.revokeObjectURL(url);
+//     a.remove();
+// }
+
 function getThingID(entry) {
     switch (entry.thing) {
 
@@ -105,8 +159,8 @@ function getThingID(entry) {
 
 function getIDThing(id) {
 
-    if(id < RELEVANT_THINGS.length) return RELEVANT_THINGS[id];
-    if(id < RELEVANT_THINGS.length + CONTENTS.length) return "Block" + CONTENTS[id - RELEVANT_THINGS.length];
+    if (id < RELEVANT_THINGS.length) return RELEVANT_THINGS[id];
+    if (id < RELEVANT_THINGS.length + CONTENTS.length) return "Block" + CONTENTS[id - RELEVANT_THINGS.length];
 
     return "Brick" + CONTENTS[id - RELEVANT_THINGS.length - CONTENTS.length];
 }
@@ -115,9 +169,9 @@ function printArray(arr) {
 
     let resultArr = new Array(arr[0].length).fill("").map(() => new Array(arr.length).fill(""));
 
-    for(let x = 0; x < arr.length; x++) {
+    for (let x = 0; x < arr.length; x++) {
 
-        for(let y = 0; y < arr[x].length; y++) {
+        for (let y = 0; y < arr[x].length; y++) {
             resultArr[arr[x].length - y - 1][x] = getIDThing(arr[x][y]);
         }
     }
@@ -187,7 +241,7 @@ function proliferate(recipient, donor, noOverride) {
 // "Fill": FullScreenMario.FullScreenMario.prototype.macroFillPreThings,
 function macroFillPreThings(reference) {
 
-    var defaults = properties[reference.thing], xnum = reference.xnum || 1, ynum = reference.ynum || 1, xwidth = reference.xwidth || defaults.width || 8, yheight = reference.yheight || defaults.height || 8, x = reference.x || 0, yref = reference.y || 0, outputs = [], output, o = 0, y, i, j;
+    var defaults = properties[reference.thing], xnum = reference.xnum || 1, ynum = reference.ynum || 1, xwidth = reference.xwidth || 8, yheight = reference.yheight || 8, x = reference.x || 0, yref = reference.y || 0, outputs = [], output, o = 0, y, i, j;
     for (i = 0; i < xnum; ++i) {
         y = yref;
         for (j = 0; j < ynum; ++j) {
@@ -248,7 +302,7 @@ function macroPipe(reference, scope) {
     }, reference, true), output = [pipe];
     pipe.macro = undefined;
     if (height === "Infinity" || height === Infinity) {
-        pipe.height = scope.MapScreener.height;
+        pipe.height = 99;
     }
     else {
         pipe.y += height;
@@ -566,7 +620,7 @@ function macroBridge(reference) {
 };
 // "Scale": FullScreenMario.FullScreenMario.prototype.macroScale,
 function macroScale(reference) {
-    var x = reference.x || 0, y = reference.y || 0, unitsize = FSM.unitsize, widthLeft = reference.widthLeft || 24, widthRight = reference.widthRight || 24, between = reference.between || 40, dropLeft = reference.dropLeft || 24, dropRight = reference.dropRight || 24, collectionName = "ScaleCollection--" + [
+    var x = reference.x || 0, y = reference.y || 0, unitsize = 8, widthLeft = reference.widthLeft || 24, widthRight = reference.widthRight || 24, between = reference.between || 40, dropLeft = reference.dropLeft || 24, dropRight = reference.dropRight || 24, collectionName = "ScaleCollection--" + [
         x, y, widthLeft, widthRight, dropLeft, dropRight
     ].join(",");
     return [
@@ -622,6 +676,25 @@ function macroScale(reference) {
             "collectionKey": "platformRight"
         }];
 };
+
+function _coordsScale(reference) {
+    var x = reference.x || 0, y = reference.y || 0, unitsize = 8, widthLeft = reference.widthLeft || 24, widthRight = reference.widthRight || 24, between = reference.between || 40, dropLeft = reference.dropLeft || 24, dropRight = reference.dropRight || 24, collectionName = "ScaleCollection--" + [
+        x, y, widthLeft, widthRight, dropLeft, dropRight
+    ].join(",");
+    return [
+        {
+            "thing": "Platform",
+            "x": x + between - (widthRight / 2),
+            "y": y - dropRight,
+            "width": widthRight,
+            "inScale": true,
+            "tension": (dropRight - 1.5) * unitsize,
+            // "onThingAdd": FSM.spawnScalePlatform,
+            "collectionName": collectionName,
+            "collectionKey": "platformRight"
+        }];
+}
+
 // "PlatformGenerator": FullScreenMario.FullScreenMario.prototype.macroPlatformGenerator,
 function macroPlatformGenerator(reference) {
     var output = [], direction = reference.direction || 1, levels = direction > 0 ? [0, 48] : [8, 56], width = reference.width || 16, x = reference.x || 0, yvel = direction * FSM.unitsize * .42, i;
@@ -652,6 +725,32 @@ function _coordsPlatformGenerator(reference) {
         "x": x + width / 2,
         "y": 0
     }]
+}
+
+function macroSlidingPlatform(reference) {
+    var x = reference.x || 0, y = reference.y || 0, width = reference.width || 16, begin = reference.begin, end = reference.end, outputs = [], output;
+
+    for (let _x = begin; _x < end; _x += 8) {
+        output = {
+            "thing": "PlatformTrack",
+            "x": _x,
+            "y": y
+        }
+
+        outputs.push(output);
+    }
+
+    for (let _i = 0; _i < width; _i += 8) {
+        output = {
+            "thing": "Platform",
+            "x": x + _i,
+            "y": y
+        }
+
+        outputs.push(output);
+    }
+
+    return outputs;
 }
 
 // "StartInsideCastle": FullScreenMario.FullScreenMario.prototype.macroStartInsideCastle,
