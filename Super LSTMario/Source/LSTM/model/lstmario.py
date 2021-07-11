@@ -13,7 +13,8 @@ CLUSTER_LENGTH = 12
 SLICE_LENGTH = 28
 MAX_ID = 56
 
-SAVE_PATH = './Super LSTMario/Source/LSTM/saves/LSTMario.h5'
+SAVE_PATH = './Super LSTMario/Source/LSTM/saves/'
+FILENAME = 'LSTMariov2.h5'
 
 def read_data(path):
     slice_files = os.listdir(path)
@@ -27,15 +28,8 @@ def read_data(path):
 
         # min amount of slices = 50
         if len(data) >= MIN_SLICES:
-            # # wrap the entire loaded json into an array to make it one data entry
             read_data.append(data)
 
-            # df = pd.read_json('./Super LSTMario/Source/LSTM/slice_data/' + file)
-            # data = tf.data.Dataset.from_tensor_slices(df.values)
-
-            # read_data.append(data)
-
-            # print('Loaded', len(data), 'rows from', file)
 
     clustered_data = []
     clustered_labels = []
@@ -49,18 +43,15 @@ def read_data(path):
                 data = np.array(area[i:i+CLUSTER_LENGTH - 1])
                 labels = np.array(area[i+CLUSTER_LENGTH])
 
-                # # divide by MAX_ID for 0-1 range
+                # divide by MAX_ID for 0-1 range
                 data = np.divide(data, MAX_ID)
                 labels = np.divide(labels, MAX_ID)
 
-                # print(np.divide(labels, MAX_ID))
-
+                # add data and label to array
                 clustered_data.append(tf.reshape(
                     data, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH]))
                 clustered_labels.append(tf.reshape(
                     labels, [1, SLICE_LENGTH]))
-
-                # print(len(clustered_data))
 
     print('Loaded', len(clustered_data), 'clusters')
 
@@ -70,7 +61,7 @@ def read_data(path):
 clustered_data, clustered_labels = read_data('./Super LSTMario/Source/LSTM/slice_data')
 
 # if no saved model exists -> train a new one
-if not os.path.isfile(SAVE_PATH):
+if not os.path.isfile(SAVE_PATH + FILENAME):
 
     model = keras.Sequential()
 
@@ -78,9 +69,12 @@ if not os.path.isfile(SAVE_PATH):
     # and output size should match the amount of IDs per vertical slice
     model.add(layers.TimeDistributed(layers.Dense(SLICE_LENGTH * 2),
               input_shape=(CLUSTER_LENGTH - 1, SLICE_LENGTH)))
+
+    # LSTM has a 1D output (just 1 slice)
     model.add(layers.LSTM(1))
 
-    model.add(layers.Dense(28, activation='sigmoid'))
+    # Dense layer with SLICE_LENGTH as output
+    model.add(layers.Dense(SLICE_LENGTH, activation='sigmoid'))
 
     opt = keras.optimizers.Adam(learning_rate=1e-3, decay=1e-5)
 
@@ -99,9 +93,9 @@ if not os.path.isfile(SAVE_PATH):
     model.fit(x=train_data, epochs=3)
 
     # save model
-    model.save('./Super LSTMario/Source/LSTM/saves/LSTMario.h5')
+    model.save(SAVE_PATH + FILENAME)
 
-    print('Saved model')
+    print('Saved model', FILENAME)
 
 # if it does exist -> load the savefile
 else:
