@@ -100,8 +100,8 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
 # if it does exist -> load the savefile
 else:
 
-    model = keras.models.load_model(SAVE_PATH)
-    print("Loaded existing model")
+    model = keras.models.load_model(SAVE_PATH + FILENAME)
+    print("Loaded existing model", FILENAME)
 
     print("Prediction:")
     print(clustered_data[0])
