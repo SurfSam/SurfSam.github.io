@@ -242,7 +242,13 @@ var FullScreenMario;
                                 }
                             ]
                         };
-                    })()
+                    })(),
+                    {
+                        "title": "Generate Data",
+                        "callback": function (FSM, schema, button, event) {
+                            FSM.generateRandomMap();
+                        },
+                    }
                 ],
                 "callback": function (FSM, schema, button) {
                     FSM.LevelEditor.disable();

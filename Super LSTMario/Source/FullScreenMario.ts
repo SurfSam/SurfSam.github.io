@@ -86,6 +86,7 @@ module FullScreenMario {
          */
         public MapScreener: IMapScreenr;
 
+        public LevelParser: ILevelParsr;
         /**
          * Stored settings to be stored separately and kept within a GameStartr.
          */
@@ -208,6 +209,10 @@ module FullScreenMario {
                 "stretchAdd": FSM.mapAddStretched.bind(FSM),
                 "afterAdd": FSM.mapAddAfter.bind(FSM)
             });
+        }
+
+        resetLevelParser(FSM: FullScreenMario): void {
+            FSM.LevelParser = new LevelParsr.LevelParsr();
         }
 
         /**
@@ -2363,6 +2368,7 @@ module FullScreenMario {
                 thing.setEdge = true;
             }
         }
+
 
         /** 
          * Used by Things in a collection to register themselves as a part of their

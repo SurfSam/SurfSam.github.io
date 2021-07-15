@@ -82,6 +82,8 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
                   optimizer=opt,
                   metrics=['accuracy'])
 
+    model.summary()
+
     # create dataset from clusters and labels
     train_data = tf.data.Dataset.from_tensor_slices(
         (clustered_data, clustered_labels))

@@ -26,6 +26,7 @@
 /// <reference path="UsageHelpr-0.2.0.ts" />
 /// <reference path="UserWrappr-0.2.0.ts" />
 /// <reference path="WorldSeedr-0.2.0.ts" />
+/// <reference path="LevelParsr-0.2.0.ts" />
 /// <reference path="js_beautify.ts" />
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -40,7 +41,6 @@ var GameStartr;
      */
     var GameStartr = (function (_super) {
         __extends(GameStartr, _super);
-
         /**
          * Initializes a new instance of the GameStartr class.
          *
@@ -82,7 +82,8 @@ var GameStartr;
                 "resetMathDecider",
                 "resetModAttacher",
                 "startModAttacher",
-                "resetContainer"
+                "resetContainer",
+                "resetLevelParser"
             ];
             if (settings.extraResets) {
                 this.resets.push.apply(this.resets, settings.extraResets);
@@ -93,10 +94,6 @@ var GameStartr;
             else {
                 this.reset(this, settings);
             }
-
-            this.gridHeight = 56;
-
-            this.parsedGrid = [];
         }
         /* Resets
         */
@@ -456,6 +453,9 @@ var GameStartr;
             GameStarter.container.appendChild(GameStarter.canvas);
             GameStarter.TouchPasser.setParentContainer(GameStarter.container);
         };
+        GameStartr.prototype.resetLevelParser = function (GameStarter) {
+            console.log("DO I have to do this");
+        };
         /* Global manipulations
         */
         /**
@@ -519,7 +519,6 @@ var GameStartr;
         GameStartr.prototype.onAreaUnspawn = function (GameStarter, direction, top, right, bottom, left) {
             GameStarter.AreaSpawner.unspawnArea(direction, (top + GameStarter.MapScreener.top) / GameStarter.unitsize, (right + GameStarter.MapScreener.left) / GameStarter.unitsize, (bottom + GameStarter.MapScreener.top) / GameStarter.unitsize, (left + GameStarter.MapScreener.left) / GameStarter.unitsize);
         };
-
         /**
          * Adds a new Thing to the game at a given position, relative to the top
          * left corner of the screen.
@@ -553,7 +552,6 @@ var GameStartr;
             thing.GameStarter.updateSize(thing);
             thing.GameStarter.GroupHolder.getFunctions().add[thing.groupType](thing);
             thing.placed = true;
-
             // This will typically be a TimeHandler.cycleClass call
             if (thing.onThingAdd) {
                 thing.onThingAdd(thing);
@@ -709,8 +707,6 @@ var GameStartr;
         GameStartr.prototype.onGamePause = function (GameStarter) {
             GameStarter.AudioPlayer.pauseAll();
             GameStarter.ModAttacher.fireEvent("onGamePause");
-
-            this.printParsed();
         };
         /**
          * Checks whether inputs can be fired, which by default is always true.

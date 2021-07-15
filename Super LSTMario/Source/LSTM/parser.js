@@ -2,10 +2,9 @@ const RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "Ko
     "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "Platform", "PlatformTrack", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
     "Springboard", "Coral", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon", "PlantLarge",
     "Fence", "CastleWall", "Cloud1", "PlantSmall", "Cloud2"];
-// "CastleSmall", "CastleLarge", "Floor", "Pipe", "PlatformGeneratorUp", "PlatformGeneratorDown"];
 
 const RELEVANT_MACROS = ["Floor", "Pipe", "Fill", "Ceiling", "PlatformGenerator", "Tree", "Water", "StartInsideCastle",
-    "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge"]; // "CheepsStart", "BulletBillsStart", "BulletBillsStop", "LakituStop"
+    "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge"];
 
 const CONTENTS = ["Mushroom", "Mushroom1Up", "Coin", "Star", "Vine", "HiddenCoin"];
 
@@ -35,72 +34,81 @@ let maps = FullScreenMario.FullScreenMario.settings.maps;
 let properties = FullScreenMario.FullScreenMario.settings.objects.properties;
 let propertiesFull = {};
 
-let oneOne = maps.library["1-1"];
-
 areaGrids = [];
 
-// for (var area of oneOne["areas"]) {
-let everything = [];
-for (var mapID in maps.library) {
-    if (mapID == "Random") continue;
+// parseObjectsFromMaps(maps.library);
 
-    for (var area in maps.library[mapID]["areas"]) {
+parseRandomMaps(1);
 
-        let _area = maps.library[mapID]["areas"][area];
-        // Copy creation array
-        let creation = [..._area["creation"]];
+function parseRandomMaps(count) {
+    function getNewSeed() {
+        return new Date().getTime()
+            .toString()
+            .split("")
+            .sort(function () { return 0.5 - Math.random(); })
+            .reverse()
+            .join("");
+    }
 
-        // Filter out irrelevant data
-        console.log(`Length prior to filtering: ${creation.length}`);
-        creation = creation.filter(entry =>
-            entry.macro && RELEVANT_MACROS.includes(entry.macro) ||
-            entry.thing && RELEVANT_THINGS.includes(entry.thing));
-        console.log(`Length after filtering: ${creation.length}`);
+    // let randMaps = FullScreenMario.FullScreenMario.prototype.generateRandomMap(maps.library["Random"]);
+}
 
-        let resultList = [];
-        for (var reference of creation) {
-
-            // console.log(reference);
-            if (reference.macro && reference.macro != undefined) {
-                let result = macros[reference.macro](reference);
-
-                resultList.push(...result);
-            }
-            else {
-
-                if (reference.thing == "Platform" && reference.sliding) {
-                    resultList.push(...macroSlidingPlatform(reference));
+function parseObjectsFromMaps(maps) {
+    for (var mapID in maps) {
+    
+        for (var area in maps["areas"]) {
+    
+            let _area = maps["areas"][area];
+            // Copy creation array
+            let creation = [..._area["creation"]];
+    
+            // Filter out irrelevant data
+            console.log(`Length prior to filtering: ${creation.length}`);
+            creation = creation.filter(entry =>
+                entry.macro && RELEVANT_MACROS.includes(entry.macro) ||
+                entry.thing && RELEVANT_THINGS.includes(entry.thing));
+            console.log(`Length after filtering: ${creation.length}`);
+    
+            let resultList = [];
+            for (var reference of creation) {
+    
+                // console.log(reference);
+                if (reference.macro && reference.macro != undefined) {
+                    let result = macros[reference.macro](reference);
+    
+                    resultList.push(...result);
                 }
-                else resultList.push(reference);
+                else {
+    
+                    if (reference.thing == "Platform" && reference.sliding) {
+                        resultList.push(...macroSlidingPlatform(reference));
+                    }
+                    else resultList.push(reference);
+                }
             }
+    
+            console.log(`Resulting list: ${resultList.length}`);
+            // console.log(resultList);
+    
+            let lastXIndex = Math.max.apply(Math, resultList.map(function (o) { return o.x ?? 0; }));
+    
+            let gridArray = new Array(Math.ceil(lastXIndex / 8) + 1).fill(0).map(() => new Array(28).fill(0));
+    
+            for (var entry of resultList) {
+                // if x or y are not given, pick 0 as default
+                gridArray[Math.floor((entry.x || 0) / 8)][Math.floor((entry.y || 0) / 8)] = getThingID(entry);
+            }
+    
+            printParsed((mapID == "Random" ? mapID + randCounter : mapID), area, gridArray);
         }
 
-        console.log(`Resulting list: ${resultList.length}`);
-        // console.log(resultList);
-
-        let lastXIndex = Math.max.apply(Math, resultList.map(function (o) { return o.x ?? 0; }));
-
-        let gridArray = new Array(Math.ceil(lastXIndex / 8) + 1).fill(0).map(() => new Array(28).fill(0));
-
-        for (var entry of resultList) {
-            // if x or y are not given, pick 0 as default
-            gridArray[Math.floor((entry.x || 0) / 8)][Math.floor((entry.y || 0) / 8)] = getThingID(entry);
-
-            // gridArray[Math.floor((entry.x || 0) / 8)][Math.floor((entry.y || 0) / 8)] = entry.thing;
-        }
-        // everything.push(...resultList);
-        // console.log(gridArray);
-        // printArray(gridArray);
-
-        printParsed(mapID, area, gridArray);
-        // forceSaveData(mapID, area, gridArray);
+        randCounter++;
     }
 }
 
-// listUniqueThings(everything);
-
 //#region Utility
 
+let randCounter = 0;
 function printParsed(location, area, arr) {
     var textFile = null;
 
@@ -117,7 +125,10 @@ function printParsed(location, area, arr) {
     textFile = window.URL.createObjectURL(data);
 
     // returns a URL you can use as a href
-    document.write(`<p><a href="${textFile}" download="${location}-${area}.json">${location}</a></p>`);
+    if(location == "Random")
+        document.write(`<p><a href="${textFile}" download="${location}-${area}.json">${location}</a></p>`);
+    else
+        document.write(`<p><a href="${textFile}" download="${location}-${area}.json">${location}</a></p>`);
 }
 
 // function forceSaveData(location, area, data) {
