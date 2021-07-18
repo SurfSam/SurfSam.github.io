@@ -356,6 +356,8 @@ declare module WorldSeedr {
          */
         runGeneratedCommands(): void;
 
+        getGeneratedCommands(): ICommand[];
+
         /**
          * Generates a collection of randomly chosen possibilities based on the 
          * given schema mapping. These does not recursively parse the output; do
@@ -662,6 +664,9 @@ module WorldSeedr {
             this.onPlacement(this.generatedCommands);
         }
 
+        getGeneratedCommands(): ICommand[] {
+            return this.generatedCommands;
+        }
 
         /* Hardcore generation functions
         */

@@ -159,6 +159,9 @@ var WorldSeedr;
         WorldSeedr.prototype.runGeneratedCommands = function () {
             this.onPlacement(this.generatedCommands);
         };
+        WorldSeedr.prototype.getGeneratedCommands = function () {
+            return this.generatedCommands;
+        };
         /* Hardcore generation functions
         */
         /**

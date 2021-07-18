@@ -2412,6 +2412,16 @@ module FullScreenMario {
                 FSM.QuadsKeeper.right / FSM.unitsize,
                 FSM.QuadsKeeper.bottom / FSM.unitsize,
                 FSM.QuadsKeeper.left / FSM.unitsize);
+
+            let preThings = FSM.AreaSpawner.getPreThings();
+            console.log(preThings);
+            FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
+        }
+
+        
+        generateRandomMaps(FSM: IFullScreenMario): void {
+ 
+            FSM.setMap("Random");
         }
 
         /**

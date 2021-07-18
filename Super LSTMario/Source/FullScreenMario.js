@@ -1870,6 +1870,12 @@ var FullScreenMario;
             });
             FSM.WorldSeeder.runGeneratedCommands();
             FSM.AreaSpawner.spawnArea("xInc", FSM.QuadsKeeper.top / FSM.unitsize, FSM.QuadsKeeper.right / FSM.unitsize, FSM.QuadsKeeper.bottom / FSM.unitsize, FSM.QuadsKeeper.left / FSM.unitsize);
+            var preThings = FSM.AreaSpawner.getPreThings();
+            console.log(preThings);
+            FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
+        };
+        FullScreenMario.prototype.generateRandomMaps = function (FSM) {
+            FSM.setMap("Random");
         };
         /**
          * Activation callback for starting spawnRandomCheep on an interval.

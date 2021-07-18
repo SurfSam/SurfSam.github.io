@@ -246,7 +246,7 @@ var FullScreenMario;
                     {
                         "title": "Generate Data",
                         "callback": function (FSM, schema, button, event) {
-                            FSM.generateRandomMap();
+                            FSM.generateRandomMaps(FSM);
                         },
                     }
                 ],
