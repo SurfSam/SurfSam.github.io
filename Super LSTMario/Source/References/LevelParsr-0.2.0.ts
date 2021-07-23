@@ -150,18 +150,19 @@ module LevelParsr {
         // }
 
         getThingID(entry) {
-            switch (entry.thing) {
+            let ref = entry.thing;
+            switch (ref.thing) {
 
                 case 'Block':
                     // The X entries after relevant things is reserved for the different block types
-                    if (entry.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.indexOf(entry.hidden ? "HiddenCoin" : entry.contents);
+                    if (ref.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.indexOf(ref.hidden ? "HiddenCoin" : ref.contents);
 
                 case 'Brick':
                     // The X entries after that are reserved for the different BRICK types
-                    if (entry.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.length + this.CONTENTS.indexOf(entry.contents);
+                    if (ref.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.length + this.CONTENTS.indexOf(ref.contents);
 
                 default:
-                    return this.RELEVANT_THINGS.indexOf(entry.thing);
+                    return this.RELEVANT_THINGS.indexOf(ref.thing);
             }
         }
 
