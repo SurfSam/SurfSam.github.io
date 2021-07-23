@@ -139,20 +139,20 @@ else:
         last_result = clustered_data[0]
         level = last_result
 
-        print(clustered_data[0])
-        test = MODEL.predict(last_result)
-
-        print(test)
-        # for i in range(0, randrange(1, 3)):
+        for i in range(0, randrange(2, 3)):
             
-        #     # generate new output
-        #     last_result = np.round(MODEL.predict(last_result) * MAX_ID)
+            # slice the last 11 digits off the level generated thus far as a new input for the prediction
+            lr_len = len(level)
+            input_slice = level[lr_len - CLUSTER_LENGTH + 1:lr_len]
 
-        #     level.append(last_result)
+            # generate new output
+            last_result = np.round(MODEL.predict(tf.reshape(input_slice, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH])) * MAX_ID)
 
-        #     print(i, last_result, level)
+            level = np.append(level, last_result, axis=0)
 
-        return jsonify(level)
+            print(i)
+
+        return jsonify(level.tolist())
     
     app.run()
     # print("Prediction:")
