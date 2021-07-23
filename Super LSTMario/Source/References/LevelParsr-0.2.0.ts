@@ -87,7 +87,7 @@ module LevelParsr {
 
             for (var item of resultList) {
                 // if x or y are not given, pick 0 as default
-                gridArray[Math.floor((item.x || 0) / 8)][Math.floor((item.y || 0) / 8)] = this.getThingID(entry);
+                gridArray[Math.floor((item.x || 0) / 8)][Math.floor((item.y || 0) / 8)] = this.getThingID(item);
             }
 
             this.printParsed("Random", this.randCounter++, gridArray);
@@ -150,19 +150,18 @@ module LevelParsr {
         // }
 
         getThingID(entry) {
-            let ref = entry.thing;
-            switch (ref.thing) {
+            switch (entry.thing) {
 
                 case 'Block':
                     // The X entries after relevant things is reserved for the different block types
-                    if (ref.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.indexOf(ref.hidden ? "HiddenCoin" : ref.contents);
+                    if (entry.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.indexOf(entry.hidden ? "HiddenCoin" : entry.contents);
 
                 case 'Brick':
                     // The X entries after that are reserved for the different BRICK types
-                    if (ref.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.length + this.CONTENTS.indexOf(ref.contents);
+                    if (entry.contents) return this.RELEVANT_THINGS.length + this.CONTENTS.length + this.CONTENTS.indexOf(entry.contents);
 
                 default:
-                    return this.RELEVANT_THINGS.indexOf(ref.thing);
+                    return this.RELEVANT_THINGS.indexOf(entry.thing);
             }
         }
 
