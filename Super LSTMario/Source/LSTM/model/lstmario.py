@@ -18,10 +18,10 @@ MIN_SLICES = 50
 CLUSTER_LENGTH = 12
 SLICE_LENGTH = 28
 MAX_ID = 56
-N_EPOCHS = 10
+N_EPOCHS = 100
 
 SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov4.h5'
+FILENAME = 'LSTMariov4.1.h5'
 MODEL = None
 
 def read_data(path):
@@ -85,16 +85,16 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     MODEL.add(layers.Input((CLUSTER_LENGTH-1, SLICE_LENGTH)))
 
     MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
-    MODEL.add(layers.Dropout(0.2))
+    # MODEL.add(layers.Dropout(0.2))
 
     MODEL.add(layers.LSTM(128, activation='relu'))
-    MODEL.add(layers.Dropout(0.2))
+    # MODEL.add(layers.Dropout(0.2))
 
     MODEL.add(layers.Dense(SLICE_LENGTH * 2, activation='relu'))
-    MODEL.add(layers.Dropout(0.2))
+    # MODEL.add(layers.Dropout(0.2))
 
     # Dense layer with SLICE_LENGTH as output
-    MODEL.add(layers.Dense(SLICE_LENGTH, activation='sigmoid'))
+    MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
 
     MODEL.compile(loss='mse',
                   optimizer=keras.optimizers.Adam(
