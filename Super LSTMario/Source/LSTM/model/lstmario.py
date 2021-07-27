@@ -18,10 +18,10 @@ MIN_SLICES = 50
 CLUSTER_LENGTH = 12
 SLICE_LENGTH = 28
 MAX_ID = 56
-N_EPOCHS = 3
+N_EPOCHS = 10
 
 SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov3.h5'
+FILENAME = 'LSTMariov4.h5'
 MODEL = None
 
 def read_data(path):
@@ -83,16 +83,7 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     MODEL = keras.Sequential()
 
     MODEL.add(layers.Input((CLUSTER_LENGTH-1, SLICE_LENGTH)))
-    # Since we are gonna feed in vertical slices of IDs, the input
-    # and output size should match the amount of IDs per vertical slice
-    # model.add(layers.TimeDistributed(layers.Dense(SLICE_LENGTH * 2),
-    #   input_shape=(CLUSTER_LENGTH - 1, SLICE_LENGTH)))
 
-    # model.add(layers.Dense(SLICE_LENGTH * 2))
-
-    # # # Add a dropout layer to prevent overfitting
-
-    # LSTM has a 1D output (just 1 slice)
     MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
     MODEL.add(layers.Dropout(0.2))
 
@@ -105,7 +96,7 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     # Dense layer with SLICE_LENGTH as output
     MODEL.add(layers.Dense(SLICE_LENGTH, activation='sigmoid'))
 
-    MODEL.compile(loss='categorical_crossentropy',
+    MODEL.compile(loss='mse',
                   optimizer=keras.optimizers.Adam(
                       learning_rate=1e-3, decay=1e-5),
                   metrics=['accuracy'])
@@ -139,20 +130,23 @@ else:
         last_result = clustered_data[0]
         level = last_result
 
-        for i in range(0, randrange(2, 3)):
+        for _ in range(0, randrange(200, 400)):
             
             # slice the last 11 digits off the level generated thus far as a new input for the prediction
             lr_len = len(level)
             input_slice = level[lr_len - CLUSTER_LENGTH + 1:lr_len]
 
             # generate new output
-            last_result = np.round(MODEL.predict(tf.reshape(input_slice, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH])) * MAX_ID)
+            # reshape input_slice to fit requirements and get new prediction
+            prediction = MODEL.predict(tf.reshape(input_slice, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH]))
 
+            # map the prediction to IDs, then divide for proper prediction
+            last_result = np.divide(np.round(prediction * MAX_ID), MAX_ID)
+
+            # append last_result to level sequence
             level = np.append(level, last_result, axis=0)
 
-            print(i)
-
-        return jsonify(level.tolist())
+        return jsonify((level * MAX_ID).tolist())
     
     app.run()
     # print("Prediction:")
