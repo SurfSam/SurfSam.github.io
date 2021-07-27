@@ -7,7 +7,7 @@ import json
 
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras import backend as K
+import matplotlib.pyplot as plt
 
 import flask
 
@@ -18,10 +18,10 @@ MIN_SLICES = 50
 CLUSTER_LENGTH = 12
 SLICE_LENGTH = 28
 MAX_ID = 56
-N_EPOCHS = 100
+N_EPOCHS = 600
 
 SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov4.1.h5'
+FILENAME = 'LSTMariov4.3.h5'
 MODEL = None
 
 def read_data(path):
@@ -104,11 +104,28 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     MODEL.summary()
 
     # train model
-    MODEL.fit(x=clustered_data, y=clustered_labels, epochs=N_EPOCHS)
-
+    history = MODEL.fit(x=clustered_data, y=clustered_labels, epochs=N_EPOCHS)
+    
     # save model
     MODEL.save(SAVE_PATH + FILENAME)
 
+    # summarize history for accuracy
+    plt.plot(history.history['accuracy'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.ylim(0, 1)
+    plt.xlim(0, N_EPOCHS)
+    # plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.xlim(0, N_EPOCHS)
+    # plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
     print('Saved model', FILENAME)
 
 # if it does exist -> create the backend for requests
@@ -146,7 +163,7 @@ else:
             # append last_result to level sequence
             level = np.append(level, last_result, axis=0)
 
-        return jsonify((level * MAX_ID).tolist())
+        return jsonify((np.round(level * MAX_ID)).tolist())
     
     app.run()
     # print("Prediction:")
