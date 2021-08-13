@@ -1,6 +1,7 @@
 declare module LevelParsr {
     export interface ILevelParsr {
         parseRandom(creation: MapsCreatr.IPreThing[], FSM: FullScreenMario.IFullScreenMario);
+        parseLSTMData(data: Array<Array<number>>, FSM: FullScreenMario.IFullScreenMario);
     }
 }
 
@@ -92,6 +93,69 @@ module LevelParsr {
 
             this.printParsed("Random", this.randCounter++, gridArray);
             // randCounter++;
+        }
+
+        parseLSTMData(data: Array<Array<number>>, FSM: FullScreenMario.IFullScreenMario) {
+
+            // Within the game engine, the levels are objects describing the world
+            // as separate objects with coordinates and properties.
+
+            // Basic level structure
+            let levelObj = {
+                "name": "LSTMario",
+                "locations": [
+                    { "entry": "Plain" }
+                ],
+                "areas": [
+                    {
+                        "setting": "Overworld",
+                        "creation": []
+                    }
+                ]
+            };
+
+            // We now need to populate the creation array:
+            let creation = levelObj.areas[0].creation;
+
+            // the array indices can be treated as coordinates/8
+            // loop over all indices and parse every block
+            for (let _x = 0; _x < data.length; _x++) {
+
+                for (let _y = 0; _y < data[_x].length; _y++) {
+
+                    creation.push(this.parseBack(_x * 8, _y * 8, data[_x][_y]));
+                }
+            }
+            console.log(`Parsed ${data.length}`);
+        }
+
+        parseBack(_x: number, _y: number, _id: number): Object {
+
+            // Set thing to CastleBlockFireBalls per default to save a condition
+            let creationObj = {
+                "thing": "CastleBlockFireBalls",
+                "x": _x,
+                "y": _y
+            };
+
+            // normal blocks -> just set thing to the appropriate IDThing
+            if (_id < this.RELEVANT_THINGS.length) creationObj["thing"] = this.RELEVANT_THINGS[_id];
+
+            // Past relevant things come the blocks/bricks with content
+
+            // Blocks
+            else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length) {
+                creationObj["thing"] = "Block";
+                creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length];
+            }
+
+            // Bricks
+            else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length * 2) {
+                creationObj["thing"] = "Brick";
+                creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length - this.CONTENTS.length];
+            }
+
+            return creationObj;
         }
 
         //#region Utility

@@ -72,6 +72,55 @@ var LevelParsr;
             this.printParsed("Random", this.randCounter++, gridArray);
             // randCounter++;
         };
+        LevelParsr.prototype.parseLSTMData = function (data, FSM) {
+            // Within the game engine, the levels are objects describing the world
+            // as separate objects with coordinates and properties.
+            // Basic level structure
+            var levelObj = {
+                "name": "LSTMario",
+                "locations": [
+                    { "entry": "Plain" }
+                ],
+                "areas": [
+                    {
+                        "setting": "Overworld",
+                        "creation": []
+                    }
+                ]
+            };
+            // We now need to populate the creation array:
+            var creation = levelObj.areas[0].creation;
+            // the array indices can be treated as coordinates/8
+            // loop over all indices and parse every block
+            for (var _x = 0; _x < data.length; _x++) {
+                for (var _y = 0; _y < data[_x].length; _y++) {
+                    
+                    // Filter out Air and parse to creation
+                    if(data[_x][_y] != 0) creation.push(this.parseBack(_x * 8, _y * 8, data[_x][_y]));
+                }
+            }
+            console.log("Parsed " + data.length);
+        };
+        LevelParsr.prototype.parseBack = function (_x, _y, _id) {
+            // Set thing to CastleBlockFireBalls per default to save a condition
+            var creationObj = {
+                "thing": "CastleBlockFireBalls",
+                "x": _x,
+                "y": _y
+            };
+            // normal blocks -> just set thing to the appropriate IDThing
+            if (_id < this.RELEVANT_THINGS.length)
+                creationObj["thing"] = this.RELEVANT_THINGS[_id];
+            else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length) {
+                creationObj["thing"] = "Block";
+                creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length];
+            }
+            else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length * 2) {
+                creationObj["thing"] = "Brick";
+                creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length - this.CONTENTS.length];
+            }
+            return creationObj;
+        };
         //#region Utility
         LevelParsr.prototype.printParsed = function (location, area, arr) {
             var textFile = null;

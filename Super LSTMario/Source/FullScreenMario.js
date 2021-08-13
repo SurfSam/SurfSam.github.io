@@ -1874,8 +1874,11 @@ var FullScreenMario;
             console.log(preThings);
             FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
         };
-        FullScreenMario.prototype.generateRandomMaps = function (FSM) {
+        FullScreenMario.prototype.generateRandomMap = function (FSM) {
             FSM.setMap("Random");
+        };
+        FullScreenMario.prototype.parseLSTMLevel = function (FSM, data) {
+            FSM.LevelParser.parseLSTMData(data, FSM);
         };
         /**
          * Activation callback for starting spawnRandomCheep on an interval.

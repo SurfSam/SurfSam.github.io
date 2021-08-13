@@ -2419,9 +2419,12 @@ module FullScreenMario {
         }
 
         
-        generateRandomMaps(FSM: IFullScreenMario): void {
- 
+        generateRandomMap(FSM: IFullScreenMario): void {
             FSM.setMap("Random");
+        }
+
+        parseLSTMLevel(FSM: IFullScreenMario, data: Array<Array<number>>): void {
+            FSM.LevelParser.parseLSTMData(data, FSM);
         }
 
         /**
