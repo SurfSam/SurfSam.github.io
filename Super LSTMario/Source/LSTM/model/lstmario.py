@@ -63,6 +63,24 @@ def read_data(path):
 
     return np.asarray(clustered_data), np.asarray(clustered_labels)
 
+def plotHistory(history):
+    # summarize history for accuracy
+    plt.plot(history.history['accuracy'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.ylim(0, 1)
+    plt.xlim(0, N_EPOCHS)
+    # plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.xlim(0, N_EPOCHS)
+    # plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
 
 # read clusters and labels
 clustered_data, clustered_labels = read_data(
@@ -109,23 +127,7 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     # save model
     MODEL.save(SAVE_PATH + FILENAME)
 
-    # summarize history for accuracy
-    plt.plot(history.history['accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.ylim(0, 1)
-    plt.xlim(0, N_EPOCHS)
-    # plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
-    # summarize history for loss
-    plt.plot(history.history['loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.xlim(0, N_EPOCHS)
-    # plt.legend(['train', 'test'], loc='upper left')
-    plt.show()
+    plotHistory(history)
     print('Saved model', FILENAME)
 
 # if it does exist -> create the backend for requests
