@@ -244,9 +244,21 @@ var FullScreenMario;
                         };
                     })(),
                     {
+                        "title": "LSTMario",
+                        "callback": function (FSM, schema, button, event) {
+
+                            // Make async HTTP Request and hand the data over to FSM
+                            httpGetAsync('http://127.0.0.1:5000/', function(data) {
+
+                                console.log("Data received");
+                                FSM.parseLSTMLevel(FSM, JSON.parse(data));
+                            })
+                        },
+                    },
+                    {
                         "title": "Generate Data",
                         "callback": function (FSM, schema, button, event) {
-                            FSM.generateRandomMaps(FSM);
+                            FSM.generateRandomMap(FSM);
                         },
                     }
                 ],
@@ -258,3 +270,15 @@ var FullScreenMario;
         ]
     };
 })(FullScreenMario || (FullScreenMario = {}));
+
+function httpGetAsync(theUrl, callback)
+{
+    console.log("Request sent");
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() { 
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+    xmlHttp.send(null);
+}
