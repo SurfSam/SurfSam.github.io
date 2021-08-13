@@ -26,6 +26,7 @@
 /// <reference path="UsageHelpr-0.2.0.ts" />
 /// <reference path="UserWrappr-0.2.0.ts" />
 /// <reference path="WorldSeedr-0.2.0.ts" />
+/// <reference path="LevelParsr-0.2.0.ts" />
 /// <reference path="js_beautify.ts" />
 
 declare module GameStartr {
@@ -1887,6 +1888,8 @@ module GameStartr {
          */
         public WorldSeeder: WorldSeedr.IWorldSeedr;
 
+        public LevelParser: LevelParsr.ILevelParsr;
+
         /**
          * Settings for individual modules are stored as sub-Objects here.
          */
@@ -1921,7 +1924,8 @@ module GameStartr {
             "resetMathDecider",
             "resetModAttacher",
             "startModAttacher",
-            "resetContainer"
+            "resetContainer",
+            "resetLevelParser"
         ];
 
         /**
@@ -2404,6 +2408,10 @@ module GameStartr {
             GameStarter.container.appendChild(GameStarter.canvas);
 
             GameStarter.TouchPasser.setParentContainer(GameStarter.container);
+        }
+
+        resetLevelParser(GameStarter: GameStartr): void {
+            console.log("DO I have to do this");
         }
 
 

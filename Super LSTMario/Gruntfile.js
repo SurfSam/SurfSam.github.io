@@ -148,13 +148,12 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks("grunt-contrib-cssmin");
     grunt.loadNpmTasks("grunt-contrib-htmlmin");
     grunt.loadNpmTasks("grunt-contrib-uglify");
-    grunt.loadNpmTasks("grunt-mocha-phantomjs");
+    // grunt.loadNpmTasks("grunt-mocha-phantomjs");
     grunt.loadNpmTasks("grunt-preprocess");
     grunt.loadNpmTasks("grunt-processhtml");
-    grunt.loadNpmTasks("grunt-tslint");
     grunt.loadNpmTasks("grunt-typescript");
     grunt.loadNpmTasks("grunt-zip");
     grunt.registerTask("default", [
-        "clean", "tslint", "typescript", "copy", "uglify", "cssmin", "preprocess", "processhtml", "htmlmin", "mocha_phantomjs", "zip"
+        "clean", "typescript", "copy", "uglify", "cssmin", "preprocess", "processhtml", "htmlmin", "zip"
     ]);
 };

@@ -7,13 +7,22 @@ import json
 
 from tensorflow import keras
 from tensorflow.keras import layers
+import matplotlib.pyplot as plt
+
+import flask
+
+from flask import request, jsonify
+from random import randrange
 
 MIN_SLICES = 50
 CLUSTER_LENGTH = 12
 SLICE_LENGTH = 28
 MAX_ID = 56
+N_EPOCHS = 600
 
-SAVE_PATH = './Super LSTMario/Source/LSTM/saves/LSTMario.h5'
+SAVE_PATH = '../saves/'
+FILENAME = 'LSTMariov4.3.h5'
+MODEL = None
 
 def read_data(path):
     slice_files = os.listdir(path)
@@ -27,91 +36,154 @@ def read_data(path):
 
         # min amount of slices = 50
         if len(data) >= MIN_SLICES:
-            # # wrap the entire loaded json into an array to make it one data entry
             read_data.append(data)
-
-            # df = pd.read_json('./Super LSTMario/Source/LSTM/slice_data/' + file)
-            # data = tf.data.Dataset.from_tensor_slices(df.values)
-
-            # read_data.append(data)
-
-            # print('Loaded', len(data), 'rows from', file)
 
     clustered_data = []
     clustered_labels = []
 
-
     for area in read_data:
 
-            for i in range(0, len(area)-CLUSTER_LENGTH):
+        for i in range(0, len(area)-CLUSTER_LENGTH):
 
-                # split into data and label
-                data = np.array(area[i:i+CLUSTER_LENGTH - 1])
-                labels = np.array(area[i+CLUSTER_LENGTH])
+            # split into data and label
+            data = np.array(area[i:i+CLUSTER_LENGTH - 1])
+            labels = np.array(area[i+CLUSTER_LENGTH])
 
-                # # divide by MAX_ID for 0-1 range
-                data = np.divide(data, MAX_ID)
-                labels = np.divide(labels, MAX_ID)
+            # divide by MAX_ID for 0-1 range
+            data = np.divide(data, MAX_ID)
+            labels = np.divide(labels, MAX_ID)
 
-                # print(np.divide(labels, MAX_ID))
-
-                clustered_data.append(tf.reshape(
-                    data, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH]))
-                clustered_labels.append(tf.reshape(
-                    labels, [1, SLICE_LENGTH]))
-
-                # print(len(clustered_data))
+            # add data and label to array
+            clustered_data.append(tf.reshape(
+                data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
+            clustered_labels.append(tf.reshape(
+                labels, [SLICE_LENGTH]))
 
     print('Loaded', len(clustered_data), 'clusters')
 
-    return clustered_data, clustered_labels
+    return np.asarray(clustered_data), np.asarray(clustered_labels)
+
+def plotHistory(history):
+    # summarize history for accuracy
+    plt.plot(history.history['accuracy'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.ylim(0, 1)
+    plt.xlim(0, N_EPOCHS)
+    # plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.xlim(0, N_EPOCHS)
+    # plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
 
 # read clusters and labels
-clustered_data, clustered_labels = read_data('./Super LSTMario/Source/LSTM/slice_data')
+clustered_data, clustered_labels = read_data(
+    '../random_data')
 
 # if no saved model exists -> train a new one
-if not os.path.isfile(SAVE_PATH):
+if not os.path.isfile(SAVE_PATH + FILENAME):
 
-    model = keras.Sequential()
+    # # create dataset from clusters and labels
+    # train_data = tf.data.Dataset.from_tensor_slices(
+    #     (clustered_data, clustered_labels))
 
-    # Since we are gonna feed in vertical slices of IDs, the input
-    # and output size should match the amount of IDs per vertical slice
-    model.add(layers.TimeDistributed(layers.Dense(SLICE_LENGTH * 2),
-              input_shape=(CLUSTER_LENGTH - 1, SLICE_LENGTH)))
-    model.add(layers.LSTM(1))
+    print('Shapes -- Data:', clustered_data.shape,
+          '-- Labels:', clustered_labels.shape)
+    # shuffle data
+    # train_data = train_data.shuffle(10)
 
-    model.add(layers.Dense(28, activation='sigmoid'))
+    MODEL = keras.Sequential()
 
-    opt = keras.optimizers.Adam(learning_rate=1e-3, decay=1e-5)
+    MODEL.add(layers.Input((CLUSTER_LENGTH-1, SLICE_LENGTH)))
 
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=opt,
+    MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
+    # MODEL.add(layers.Dropout(0.2))
+
+    MODEL.add(layers.LSTM(128, activation='relu'))
+    # MODEL.add(layers.Dropout(0.2))
+
+    MODEL.add(layers.Dense(SLICE_LENGTH * 2, activation='relu'))
+    # MODEL.add(layers.Dropout(0.2))
+
+    # Dense layer with SLICE_LENGTH as output
+    MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
+
+    MODEL.compile(loss='mse',
+                  optimizer=keras.optimizers.Adam(
+                      learning_rate=1e-3, decay=1e-5),
                   metrics=['accuracy'])
 
-    # create dataset from clusters and labels
-    train_data = tf.data.Dataset.from_tensor_slices(
-        (clustered_data, clustered_labels))
-
-    # shuffle data
-    train_data = train_data.shuffle(10)
+    MODEL.summary()
 
     # train model
-    model.fit(x=train_data, epochs=3)
-
+    history = MODEL.fit(x=clustered_data, y=clustered_labels, epochs=N_EPOCHS)
+    
     # save model
-    model.save('./Super LSTMario/Source/LSTM/saves/LSTMario.h5')
+    MODEL.save(SAVE_PATH + FILENAME)
 
-    print('Saved model')
+    plotHistory(history)
+    print('Saved model', FILENAME)
 
-# if it does exist -> load the savefile
+# if it does exist -> create the backend for requests
 else:
 
-    model = keras.models.load_model(SAVE_PATH)
-    print("Loaded existing model")
+    MODEL = keras.models.load_model(SAVE_PATH + FILENAME)
+    print("Loaded existing model", FILENAME)
 
-    print("Prediction:")
-    print(clustered_data[0])
-    prediction = model.predict(clustered_data[0])
+    app = flask.Flask(__name__)
+    app.config["DEBUG"] = True
 
-    print("Next slice:")
-    print(prediction * MAX_ID)
+    @app.route('/', methods=['GET'])
+    def fetch():
+
+        # fail early if model not loaded
+        if(MODEL == None):
+            return 'Model not loaded'
+
+        last_result = clustered_data[0]
+        level = last_result
+
+        for _ in range(0, randrange(200, 400)):
+            
+            # slice the last 11 digits off the level generated thus far as a new input for the prediction
+            lr_len = len(level)
+            input_slice = level[lr_len - CLUSTER_LENGTH + 1:lr_len]
+
+            # generate new output
+            # reshape input_slice to fit requirements and get new prediction
+            prediction = MODEL.predict(tf.reshape(input_slice, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH]))
+
+            # map the prediction to IDs, then divide for proper prediction
+            last_result = np.divide(np.round(prediction * MAX_ID), MAX_ID)
+
+            # append last_result to level sequence
+            level = np.append(level, last_result, axis=0)
+
+        return jsonify((np.round(level * MAX_ID)).tolist())
+    
+    app.run()
+    # print("Prediction:")
+    # print(clustered_data[0])
+
+    # # layer_name = 'lstm'
+    # # intermediate_layer_model = keras.models.Model(inputs=model.input,
+    # #                              outputs=model.get_layer(layer_name).output)
+    # # intermediate_output = intermediate_layer_model.predict(clustered_data[0])
+
+    # # print(intermediate_output)
+    # inp = model.input
+    # outputs = [layer.output for layer in model.layers]          # all layer outputs
+    # functors = [K.function([inp], [out]) for out in outputs]
+
+    # layer_outs = [func(clustered_data[0]) for func in functors]
+    # print(layer_outs)
+    # # prediction = model.predict(clustered_data[0])
+
+    # # print("Next slice:")
+    # # print(prediction * MAX_ID)

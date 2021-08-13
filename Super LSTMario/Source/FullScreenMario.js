@@ -93,6 +93,9 @@ var FullScreenMario;
                 "afterAdd": FSM.mapAddAfter.bind(FSM)
             });
         };
+        FullScreenMario.prototype.resetLevelParser = function (FSM) {
+            FSM.LevelParser = new LevelParsr.LevelParsr();
+        };
         /**
          * Resets this.ItemsHolder via the parent GameStartr resetItemsHolder.
          *
@@ -222,8 +225,6 @@ var FullScreenMario;
          */
         FullScreenMario.prototype.addPreThing = function (prething) {
             var thing = prething.thing, position = prething.position || thing.position;
-
-            // FSM 1
             thing.FSM.addThing(thing, prething.left * thing.FSM.unitsize - thing.FSM.MapScreener.left, (thing.FSM.MapScreener.floor - prething.top) * thing.FSM.unitsize);
             // Either the prething or thing, in that order, may request to be in the
             // front or back of its container using the "position" attribute
@@ -1869,6 +1870,12 @@ var FullScreenMario;
             });
             FSM.WorldSeeder.runGeneratedCommands();
             FSM.AreaSpawner.spawnArea("xInc", FSM.QuadsKeeper.top / FSM.unitsize, FSM.QuadsKeeper.right / FSM.unitsize, FSM.QuadsKeeper.bottom / FSM.unitsize, FSM.QuadsKeeper.left / FSM.unitsize);
+            var preThings = FSM.AreaSpawner.getPreThings();
+            console.log(preThings);
+            FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
+        };
+        FullScreenMario.prototype.generateRandomMaps = function (FSM) {
+            FSM.setMap("Random");
         };
         /**
          * Activation callback for starting spawnRandomCheep on an interval.
@@ -5296,7 +5303,6 @@ var FullScreenMario;
             FSM.GroupHolder.clearArrays();
             FSM.TimeHandler.cancelAllEvents();
             FSM.AreaSpawner.setLocation((name || 0).toString());
-
             FSM.MapScreener.setVariables();
             location = FSM.AreaSpawner.getLocation((name || 0).toString());
             FSM.ModAttacher.fireEvent("onPreSetLocation", location);

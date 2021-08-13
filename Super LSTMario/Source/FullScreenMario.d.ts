@@ -76,6 +76,10 @@ declare module FullScreenMario {
         underwater?: boolean;
     }
 
+    export interface ILevelParsr extends LevelParsr.ILevelParsr {
+
+    }
+
     /**
      * A Map parsed from its raw JSON-friendly description.
      */
@@ -2123,6 +2127,7 @@ declare module FullScreenMario {
          */
         MapScreener: IMapScreenr;
 
+        LevelParser: ILevelParsr;
         /**
          * Stored settings to be stored separately and kept within a GameStartr.
          */
@@ -2183,6 +2188,8 @@ declare module FullScreenMario {
          * @param customs   Any optional custom settings.
          */
         resetAreaSpawner(FSM: IFullScreenMario, settings: GameStartr.IGameStartrSettings): void;
+
+        resetLevelParser(FSM: IFullScreenMario): void;
 
         /**
          * Resets this.ItemsHolder via the parent GameStartr resetItemsHolder.

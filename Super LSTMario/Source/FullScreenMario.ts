@@ -86,6 +86,7 @@ module FullScreenMario {
          */
         public MapScreener: IMapScreenr;
 
+        public LevelParser: ILevelParsr;
         /**
          * Stored settings to be stored separately and kept within a GameStartr.
          */
@@ -208,6 +209,10 @@ module FullScreenMario {
                 "stretchAdd": FSM.mapAddStretched.bind(FSM),
                 "afterAdd": FSM.mapAddAfter.bind(FSM)
             });
+        }
+
+        resetLevelParser(FSM: FullScreenMario): void {
+            FSM.LevelParser = new LevelParsr.LevelParsr();
         }
 
         /**
@@ -2364,6 +2369,7 @@ module FullScreenMario {
             }
         }
 
+
         /** 
          * Used by Things in a collection to register themselves as a part of their
          * container collection Object. This is called by onThingMake, so they're 
@@ -2406,6 +2412,16 @@ module FullScreenMario {
                 FSM.QuadsKeeper.right / FSM.unitsize,
                 FSM.QuadsKeeper.bottom / FSM.unitsize,
                 FSM.QuadsKeeper.left / FSM.unitsize);
+
+            let preThings = FSM.AreaSpawner.getPreThings();
+            console.log(preThings);
+            FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
+        }
+
+        
+        generateRandomMaps(FSM: IFullScreenMario): void {
+ 
+            FSM.setMap("Random");
         }
 
         /**
