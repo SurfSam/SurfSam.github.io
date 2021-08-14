@@ -1878,7 +1878,9 @@ var FullScreenMario;
             FSM.setMap("Random");
         };
         FullScreenMario.prototype.parseLSTMLevel = function (FSM, data) {
-            FSM.LevelParser.parseLSTMData(data, FSM);
+            var lstmarioLevel = FSM.LevelParser.parseLSTMToLevel(data, FSM);
+            FSM.MapsCreator.storeMap("LSTMario", lstmarioLevel);
+            FSM.setMap("LSTMario");
         };
         /**
          * Activation callback for starting spawnRandomCheep on an interval.

@@ -2424,7 +2424,10 @@ module FullScreenMario {
         }
 
         parseLSTMLevel(FSM: IFullScreenMario, data: Array<Array<number>>): void {
-            FSM.LevelParser.parseLSTMData(data, FSM);
+            let lstmarioLevel = FSM.LevelParser.parseLSTMToLevel(data, FSM);
+
+            FSM.MapsCreator.storeMap("LSTMario", lstmarioLevel);
+            FSM.setMap("LSTMario");
         }
 
         /**

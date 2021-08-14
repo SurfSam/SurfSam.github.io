@@ -1,7 +1,7 @@
 declare module LevelParsr {
     export interface ILevelParsr {
         parseRandom(creation: MapsCreatr.IPreThing[], FSM: FullScreenMario.IFullScreenMario);
-        parseLSTMData(data: Array<Array<number>>, FSM: FullScreenMario.IFullScreenMario);
+        parseLSTMToLevel(data: Array<Array<number>>, FSM: FullScreenMario.IFullScreenMario);
     }
 }
 
@@ -95,7 +95,7 @@ module LevelParsr {
             // randCounter++;
         }
 
-        parseLSTMData(data: Array<Array<number>>, FSM: FullScreenMario.IFullScreenMario) {
+        parseLSTMToLevel(data: Array<Array<number>>, FSM: FullScreenMario.IFullScreenMario) {
 
             // Within the game engine, the levels are objects describing the world
             // as separate objects with coordinates and properties.
@@ -114,8 +114,18 @@ module LevelParsr {
                 ]
             };
 
+            // levelObj["name"] = "LSTMario";
+
+            // let levelArea: MapsCreatr.IMapsCreatrAreaRaw;
+            // levelArea.creation = [];
+            // levelObj["areas"][0] = levelArea;
+
+            // let levelLocation: MapsCreatr.IMapsCreatrLocationRaw;
+            // levelLocation.entry = "Plain";
+            // levelObj["locations"][0] = levelLocation;
+
             // We now need to populate the creation array:
-            let creation = levelObj.areas[0].creation;
+            let creation = levelObj["areas"][0].creation;
 
             // the array indices can be treated as coordinates/8
             // loop over all indices and parse every block
@@ -123,10 +133,13 @@ module LevelParsr {
 
                 for (let _y = 0; _y < data[_x].length; _y++) {
 
-                    creation.push(this.parseBack(_x * 8, _y * 8, data[_x][_y]));
+                    // Filter out Air
+                    if (data[_x][_y] != 0) creation.push(this.parseBack(_x * 8, _y * 8, data[_x][_y]));
                 }
             }
             console.log(`Parsed ${data.length}`);
+
+            return levelObj;
         }
 
         parseBack(_x: number, _y: number, _id: number): Object {
@@ -139,7 +152,25 @@ module LevelParsr {
             };
 
             // normal blocks -> just set thing to the appropriate IDThing
-            if (_id < this.RELEVANT_THINGS.length) creationObj["thing"] = this.RELEVANT_THINGS[_id];
+            if (_id < this.RELEVANT_THINGS.length) {
+
+                // Exceptions: PlatformGenerator
+                switch (_id) {
+                    case this.RELEVANT_THINGS.indexOf["PlatformGeneratorDown"]:
+                        creationObj["direction"] = -1;
+                    case this.RELEVANT_THINGS.indexOf["PlatformGeneratorUp"]:
+
+                        creationObj["macro"] = "PlatformGenerator";
+
+                        // Remove ref to CastleBlockFireBalls
+                        delete creationObj["thing"];
+                        break;
+
+                    default:
+                        creationObj["thing"] = this.RELEVANT_THINGS[_id];
+                        break;
+                }
+            }
 
             // Past relevant things come the blocks/bricks with content
 

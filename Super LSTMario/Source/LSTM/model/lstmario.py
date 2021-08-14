@@ -10,6 +10,7 @@ from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 
 import flask
+from flask_cors import CORS, cross_origin
 
 from flask import request, jsonify
 from random import randrange
@@ -138,8 +139,11 @@ else:
 
     app = flask.Flask(__name__)
     app.config["DEBUG"] = True
+    cors = CORS(app)
+    app.config['CORS_HEADERS'] = 'Content-Type'
 
     @app.route('/', methods=['GET'])
+    @cross_origin()
     def fetch():
 
         # fail early if model not loaded
@@ -149,7 +153,7 @@ else:
         last_result = clustered_data[0]
         level = last_result
 
-        for _ in range(0, randrange(200, 400)):
+        for _ in range(0, randrange(100, 400)):
             
             # slice the last 11 digits off the level generated thus far as a new input for the prediction
             lr_len = len(level)
