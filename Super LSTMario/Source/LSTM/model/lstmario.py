@@ -20,9 +20,10 @@ CLUSTER_LENGTH = 15
 SLICE_LENGTH = 28
 MAX_ID = 56
 N_EPOCHS = 600
+VARIETY_MARGIN = 0.5
 
 SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov5.original.CL15.h5'
+FILENAME = 'LSTMariov5.original.CL' + str(CLUSTER_LENGTH) + '.h5'
 MODEL = None
 
 def read_data(path):
@@ -48,17 +49,27 @@ def read_data(path):
 
             # split into data and label
             data = np.array(area[i:i+CLUSTER_LENGTH - 1])
-            labels = np.array(area[i+CLUSTER_LENGTH])
+            label = np.array(area[i+CLUSTER_LENGTH])
 
-            # divide by MAX_ID for 0-1 range
-            data = np.divide(data, MAX_ID)
-            labels = np.divide(labels, MAX_ID)
+            # filter out slices with not enough variation
+            # by comparing the slice avg to the label
+            # grab the average within each horizontal array
+            data_avg = np.average(data, axis=0)
 
-            # add data and label to array
-            clustered_data.append(tf.reshape(
-                data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
-            clustered_labels.append(tf.reshape(
-                labels, [SLICE_LENGTH]))
+            variety = np.linalg.norm(data_avg - label)
+            # subtract the label from the data_average and get the magnitude of the resulting vector
+            if variety >= VARIETY_MARGIN:
+                # divide by MAX_ID for 0-1 range
+                data = np.divide(data, MAX_ID)
+                label = np.divide(label, MAX_ID)
+
+                # add data and label to array
+                clustered_data.append(tf.reshape(
+                    data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
+                clustered_labels.append(tf.reshape(
+                    label, [SLICE_LENGTH]))
+            else:
+                print('Sorted out', data, label, variety)
 
     print('Loaded', len(clustered_data), 'clusters')
 
