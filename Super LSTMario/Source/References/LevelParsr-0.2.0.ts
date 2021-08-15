@@ -144,9 +144,7 @@ module LevelParsr {
 
         parseBack(_x: number, _y: number, _id: number): Object {
 
-            // Set thing to CastleBlockFireBalls per default to save a condition
             let creationObj = {
-                "thing": "CastleBlockFireBalls",
                 "x": _x,
                 "y": _y
             };
@@ -154,22 +152,36 @@ module LevelParsr {
             // normal blocks -> just set thing to the appropriate IDThing
             if (_id < this.RELEVANT_THINGS.length) {
 
-                // Exceptions: PlatformGenerator
-                switch (_id) {
-                    case this.RELEVANT_THINGS.indexOf["PlatformGeneratorDown"]:
-                        creationObj["direction"] = -1;
-                    case this.RELEVANT_THINGS.indexOf["PlatformGeneratorUp"]:
+                // For simplicity, some macros were turned into Things for the IDs, so we have to convert them back
 
-                        creationObj["macro"] = "PlatformGenerator";
+                // Hacky stuff wooooooooo
+                let idThing = this.getIDThing(_id);
+                if(idThing == "PlatformGeneratorUp" || idThing == "PlatformGeneratorDown") idThing = "PlatformGenerator";
+                
+                // If macros contain idThing -> set macro instead of thing
+                if (this.RELEVANT_MACROS.indexOf(idThing) != -1) {
 
-                        // Remove ref to CastleBlockFireBalls
-                        delete creationObj["thing"];
-                        break;
+                    creationObj["macro"] = idThing;
 
-                    default:
-                        creationObj["thing"] = this.RELEVANT_THINGS[_id];
-                        break;
+                    switch (idThing) {
+
+                        case "Floor":
+                            if (_y == 0) creationObj["height"] = "Infinity";
+                        case "Pipe":
+                            creationObj["height"] = "Infinity";
+                        case "Water":
+                            creationObj["width"] = 16;
+                            break;
+
+                        case "PlatformGenerator":
+                            if(_id == this.RELEVANT_THINGS.indexOf("PlatformGeneratorDown")) creationObj["direction"] = -1;
+                            break;
+
+                        default:
+                            break;
+                    }
                 }
+                else creationObj["thing"] = this.RELEVANT_THINGS[_id];
             }
 
             // Past relevant things come the blocks/bricks with content
@@ -184,6 +196,14 @@ module LevelParsr {
             else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length * 2) {
                 creationObj["thing"] = "Brick";
                 creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length - this.CONTENTS.length];
+            }
+
+            // CastleBlockFireBalls
+            else {
+                // { "thing": "CastleBlock", "x": 160, "y": 46, "fireballs": 6, "hidden": true },
+                creationObj["thing"] = "CastleBlock";
+                creationObj["fireballs"] = 6;
+                creationObj["hidden"] = true;
             }
 
             return creationObj;
