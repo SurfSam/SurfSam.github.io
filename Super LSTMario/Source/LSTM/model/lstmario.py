@@ -16,13 +16,13 @@ from flask import request, jsonify
 from random import randrange
 
 MIN_SLICES = 50
-CLUSTER_LENGTH = 12
+CLUSTER_LENGTH = 15
 SLICE_LENGTH = 28
 MAX_ID = 56
 N_EPOCHS = 600
 
 SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov4.3.h5'
+FILENAME = 'LSTMariov5.original.CL15.h5'
 MODEL = None
 
 def read_data(path):
@@ -85,7 +85,7 @@ def plotHistory(history):
 
 # read clusters and labels
 clustered_data, clustered_labels = read_data(
-    '../random_data')
+    '../original_data')
 
 # if no saved model exists -> train a new one
 if not os.path.isfile(SAVE_PATH + FILENAME):
