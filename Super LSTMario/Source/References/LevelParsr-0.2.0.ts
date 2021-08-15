@@ -156,9 +156,9 @@ module LevelParsr {
 
                 // Exceptions: PlatformGenerator
                 switch (_id) {
-                    case this.RELEVANT_THINGS.indexOf["PlatformGeneratorDown"]:
+                    case this.RELEVANT_THINGS.indexOf("PlatformGeneratorDown"):
                         creationObj["direction"] = -1;
-                    case this.RELEVANT_THINGS.indexOf["PlatformGeneratorUp"]:
+                    case this.RELEVANT_THINGS.indexOf("PlatformGeneratorUp"):
 
                         creationObj["macro"] = "PlatformGenerator";
 
@@ -166,6 +166,8 @@ module LevelParsr {
                         delete creationObj["thing"];
                         break;
 
+                    case this.RELEVANT_THINGS.indexOf("Floor"):
+                        creationObj["height"] = "Infinity";
                     default:
                         creationObj["thing"] = this.RELEVANT_THINGS[_id];
                         break;

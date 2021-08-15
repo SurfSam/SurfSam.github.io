@@ -127,6 +127,8 @@ var LevelParsr;
                         // Remove ref to CastleBlockFireBalls
                         delete creationObj["thing"];
                         break;
+                    case this.RELEVANT_THINGS.indexOf("Floor"):
+                        creationObj["height"] = "Infinity";
                     default:
                         creationObj["thing"] = this.RELEVANT_THINGS[_id];
                         break;
