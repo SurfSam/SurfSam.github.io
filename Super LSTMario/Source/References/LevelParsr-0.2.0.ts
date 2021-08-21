@@ -181,6 +181,14 @@ module LevelParsr {
                             break;
                     }
                 }
+                else if(idThing == "PlatformTrack") {
+                    
+                    // { "thing": "Platform", "x": 688, "y": 40, "width": 24, "sliding": true, "begin": 660, "end": 720 },
+                    creationObj["thing"] = "Platform";
+                    creationObj["sliding"] = true;
+                    creationObj["begin"] = Math.max(_x - 128, 0);
+                    creationObj["end"] = _x + 128;
+                }
                 else creationObj["thing"] = this.RELEVANT_THINGS[_id];
             }
 
