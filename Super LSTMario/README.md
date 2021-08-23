@@ -1,38 +1,17 @@
-## FullScreenMario [![Build Status](https://travis-ci.org/FullScreenShenanigans/FullScreenMario.svg?branch=master)](https://travis-ci.org/FullScreenShenanigans/FullScreenMario)
+# LSTMario by Sam Vogelskamp
+## Disclaimer
+The FullScreenMario repository was taken down due to a DMCA complaint by Nintendo in 2016. The implementation used in the project was acquired using a way-back machine and is only treated as eligible for usage within the scope of this academic purpose. Given that the repository is public however, it might very well be taken down in the future due to a DMCA complaint.
 
-#### A free HTML5 remake of Nintendo's original Super Mario Bros, expanded for the modern web. It includes the original 32 levels, a random map generator, a level editor, and over a dozen custom mods.
+## Requirements
+The FullScreenMario implementation runs on pure HTML5 and JavaScript, meaning no extra requirements to deploy the frontend of the project.
+The backend of the project was written in Python, using TensorFlow and NumPy to build the logic for the neural network. Additionally, the Flask library was used to provide a rudimentary API to request the data from.
 
+## Running the project
+To run the project, start the python backend by running the following command:
+```shell
+python .\Super LSTMario\Source\LSTM\model\lstmario.py
+```
+Then access the frontend by simply opening the [index](Super%20LSTMario/Source/index.html) file.
+To generate an LSTM-generated level, a button labeled 'LSTMario' was introduced to the 'Maps' tab in the ingame menu. [reference](https://i.imgur.com/nKLcMe6.png)
+After a loading period of roughly 30 seconds, the generated level should load in, with the level name being changed to 'LSTMario' appropriately.
 
-## How to Play
-
-Although you may no longer play on [fullscreenmario.com](http://www.fullscreenmario.com), it is easy to play your own copy.
-
-#### Newcomers (non-coders)
-
-[Download the latest release](https://github.com/FullScreenShenanigans/FullScreenMario/releases) of this project, extract that onto your computer, and open **index.html** in a browser (preferably Google Chrome). That's it!
-
-#### In your own site
-
-Upload the latest release of FullScreenMario (or your built version) to your FTP server. 
-
-
-## Developing
-
-#### Build Process
-
-FullScreenMario uses [Grunt](http://gruntjs.com/) to automate building, which requires [Node.js](http://node.js.org). The process is straightforward; see [Grunt's help page](http://gruntjs.com/getting-started).
-
-#### Coding
-
-FullScreenMario is built on a modular framework called GameStartr. The [FullScreenShenanigans](https://github.com/FullScreenShenanigans/) organization contains GameStartr, its parent class EightBittr, and the modules used by the GameStartr framework. These all (theoretically) have their own README files, which you should skim before developing for FullScreenMario itself.
-
-All source code is in the [Source](Source/) directory. See [Getting Started.md](Getting Started.md) for an in-depth guide on getting started programming with FullScreenMario.
-
-The FullScreenMario.ts class declaration contains class functions and some constants, while static settings to be added to the FullScreenMario prototype, such as map layouts and object attributes, are stored in files under [Source/settings](Source/settings), such as audio.js and collisions.js.
-
-
-## Legal
-
-This is released under the [MIT License](http://mit-license.org/) (see [License.txt](LICENSE.txt)). 
-
-The FullScreenMario project started October 21st, 2012. The initial beta release in October 2013 saw the [primary host website](http://www.fullscreenmario.com) receive approximately 2.68 million unique visitors within a month, after which Nintendo shut the site down with a DMCA complaint (no action was taken against the authors, GitHub, or other hosting websites). The coding project then underwent an extensive rewrite and architecture change to become a modular project centered on the GameStartr platform, followed by a complete conversion to TypeScript.
