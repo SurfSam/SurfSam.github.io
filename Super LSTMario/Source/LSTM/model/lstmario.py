@@ -15,20 +15,20 @@ from flask_cors import CORS, cross_origin
 from flask import request, jsonify
 from random import randrange
 
-SLICE_LENGTH = 28
-MAX_ID = 56
+SLICE_LENGTH = 14
+MAX_ID = 51
 
-DATA_TYPE = "random"
+DATA_TYPE = "original"
 
-CLUSTER_LENGTH = 16
-INPUT_WIDTH = 8
+CLUSTER_LENGTH = 12
+
 N_EPOCHS = 600
 
 MIN_SLICES = 50
-VARIETY_MARGIN = 0.5
+VARIETY_MARGIN = 1
 
 SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov7.1.' + DATA_TYPE + '.CL' + str(CLUSTER_LENGTH) + '.h5'
+FILENAME = 'LSTMariov8.' + DATA_TYPE + '.CL' + str(CLUSTER_LENGTH) + '.h5'
 MODEL = None
 
 def read_data(path):
@@ -53,29 +53,31 @@ def read_data(path):
         for i in range(0, len(area)-CLUSTER_LENGTH):
 
             # split into data and label
-            data = np.array(area[i:i+INPUT_WIDTH])
-            label = np.array(area[i+INPUT_WIDTH:i+CLUSTER_LENGTH])
+            data = np.array(area[i:i+CLUSTER_LENGTH-1])
+            label = np.array(area[i+CLUSTER_LENGTH])
 
             # filter out slices with not enough variation
             # by comparing the slice avg to the label
             # grab the average within each horizontal array
-            # data_avg = np.average(data, axis=0)
+            data_avg = np.average(data, axis=0)
+            # label_avg = np.average(label, axis=0)
 
-            # variety = np.linalg.norm(data_avg - label)
-            # # subtract the label from the data_average and get the magnitude of the resulting vector
-            # if variety >= VARIETY_MARGIN:
-            # divide by MAX_ID for 0-1 range
-            data = np.divide(data, MAX_ID)
-            label = np.divide(label, MAX_ID)
+            variety = np.linalg.norm(data_avg - label)
 
-            # add data and label to array
-            clustered_data.append(tf.reshape(
-                data, [INPUT_WIDTH, SLICE_LENGTH]))
-            clustered_labels.append(tf.reshape(
-                label, [INPUT_WIDTH, SLICE_LENGTH]))
-            # else:
-            #     filtered_count += 1
-            #     print('Sorted out', data, label, variety)
+            # subtract the label from the data_average and get the magnitude of the resulting vector
+            if variety >= VARIETY_MARGIN:
+                # divide by MAX_ID for 0-1 range
+                data = np.divide(data, MAX_ID)
+                label = np.divide(label, MAX_ID)
+
+                # add data and label to array
+                clustered_data.append(tf.reshape(
+                    data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
+                clustered_labels.append(tf.reshape(
+                    label, [SLICE_LENGTH]))
+            else:
+                filtered_count += 1
+                # print('Sorted out', data, label, variety)
 
     print('Loaded', len(clustered_data), 'clusters, discarded', filtered_count)
 
@@ -102,7 +104,7 @@ def plotHistory(history):
 
 # read clusters and labels
 clustered_data, clustered_labels = read_data(
-    '../' + DATA_TYPE + '_data')
+    './Super LSTMario/Source/LSTM/' + DATA_TYPE + '_data')
 
 # if no saved model exists -> train a new one
 if not os.path.isfile(SAVE_PATH + FILENAME):
@@ -118,26 +120,26 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
 
     MODEL = keras.Sequential()
 
-    MODEL.add(layers.Input((INPUT_WIDTH, SLICE_LENGTH)))
+    MODEL.add(layers.Input((CLUSTER_LENGTH - 1, SLICE_LENGTH)))
 
-    # MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
-    # # MODEL.add(layers.Dropout(0.2))
+    MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
+    # MODEL.add(layers.Dropout(0.2))
 
-    # MODEL.add(layers.LSTM(128, activation='relu'))
-    # # MODEL.add(layers.Dropout(0.2))
+    MODEL.add(layers.LSTM(128, activation='relu'))
+    # MODEL.add(layers.Dropout(0.2))
 
-    # MODEL.add(layers.Dense(SLICE_LENGTH * 2, activation='relu'))
-    # # MODEL.add(layers.Dropout(0.2))
+    MODEL.add(layers.Dense(SLICE_LENGTH * 2, activation='relu'))
+    # MODEL.add(layers.Dropout(0.2))
 
-    # # Dense layer with SLICE_LENGTH as output
-    # MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
+    # Dense layer with SLICE_LENGTH as output
+    MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
 
 
-    MODEL.add(layers.Dense(SLICE_LENGTH * INPUT_WIDTH, activation='relu'))
+    # MODEL.add(layers.Dense(128))
 
-    MODEL.add(layers.Dense(SLICE_LENGTH * INPUT_WIDTH, activation='relu'))
+    # MODEL.add(layers.Dense(128))
 
-    MODEL.add(layers.LSTM(SLICE_LENGTH, activation='relu', input_shape=(INPUT_WIDTH, SLICE_LENGTH), return_sequences=True))
+    # MODEL.add(layers.LSTM(SLICE_LENGTH, activation='relu', input_shape=(INPUT_WIDTH, SLICE_LENGTH), return_sequences=True))
 
     MODEL.compile(loss='mse',
                   optimizer=keras.optimizers.Adam(
@@ -202,22 +204,3 @@ else:
         return jsonify((np.round(level * MAX_ID)).tolist())
     
     app.run()
-    # print("Prediction:")
-    # print(clustered_data[0])
-
-    # # layer_name = 'lstm'
-    # # intermediate_layer_model = keras.models.Model(inputs=model.input,
-    # #                              outputs=model.get_layer(layer_name).output)
-    # # intermediate_output = intermediate_layer_model.predict(clustered_data[0])
-
-    # # print(intermediate_output)
-    # inp = model.input
-    # outputs = [layer.output for layer in model.layers]          # all layer outputs
-    # functors = [K.function([inp], [out]) for out in outputs]
-
-    # layer_outs = [func(clustered_data[0]) for func in functors]
-    # print(layer_outs)
-    # # prediction = model.predict(clustered_data[0])
-
-    # # print("Next slice:")
-    # # print(prediction * MAX_ID)
