@@ -5,8 +5,8 @@ var LevelParsr;
         function LevelParsr() {
             this.RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "Koopa", "Stone", "Flag", "CastleSmall", "Coin", "PipeHorizontal", "PipeVertical", "Piranha",
                 "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "Platform", "PlatformTrack", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
-                "Springboard", "Coral", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon", "PlantLarge",
-                "Fence", "CastleWall", "Cloud1", "PlantSmall", "Cloud2"];
+                "Springboard", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon",
+                "Fence", "CastleWall"];
             this.RELEVANT_MACROS = ["Floor", "Pipe", "Fill", "Ceiling", "PlatformGenerator", "Tree", "Water", "StartInsideCastle",
                 "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge"];
             this.CONTENTS = ["Mushroom", "Mushroom1Up", "Coin", "Star", "Vine", "HiddenCoin"];
@@ -62,12 +62,12 @@ var LevelParsr;
             // create grid array
             var lastXIndex = Math.max.apply(Math, resultList.map(function (o) { return o.x ? o.x : 0; }));
             var maxX = Math.ceil(lastXIndex / 8) + 1;
-            var maxY = 28;
+            var maxY = 14;
             var gridArray = this.createGridArray(maxX, maxY, 0);
             for (var _b = 0; _b < resultList.length; _b++) {
                 var item = resultList[_b];
                 // if x or y are not given, pick 0 as default
-                gridArray[Math.floor((item.x || 0) / 8)][Math.floor((item.y || 0) / 8)] = this.getThingID(item);
+                gridArray[Math.ceil((item.x || 0) / 8)][Math.ceil((item.y || 0) / 8)] = this.getThingID(item);
             }
             this.printParsed("Random", this.randCounter++, gridArray);
             // randCounter++;
@@ -88,13 +88,6 @@ var LevelParsr;
                     }
                 ]
             };
-            // levelObj["name"] = "LSTMario";
-            // let levelArea: MapsCreatr.IMapsCreatrAreaRaw;
-            // levelArea.creation = [];
-            // levelObj["areas"][0] = levelArea;
-            // let levelLocation: MapsCreatr.IMapsCreatrLocationRaw;
-            // levelLocation.entry = "Plain";
-            // levelObj["locations"][0] = levelLocation;
             // We now need to populate the creation array:
             var creation = levelObj["areas"][0].creation;
             // the array indices can be treated as coordinates/8
@@ -128,6 +121,8 @@ var LevelParsr;
                         case "Floor":
                             if (_y == 0)
                                 creationObj["height"] = "Infinity";
+                        case "TreeTrunk":
+                        case "ShroomTrunk":
                         case "Pipe":
                             creationObj["height"] = "Infinity";
                         case "Water":
@@ -191,22 +186,6 @@ var LevelParsr;
             // else
             //     document.append(`<p><a href="${textFile}" download="${location}-${area}.json">${location}</a></p>`);
         };
-        // forceSaveData(location, area, data) {
-        //     var fileName = `${location}-${area}.json`;
-        //     var data = JSON.stringify(data);
-        //     saveJSON(fileName, data, );
-        // }
-        // saveJSON (name, data) {
-        //     var a = document.createElement("a");
-        //     var url = window.URL.createObjectURL(new Blob([data], {type: "octlet/stream"}));
-        //     a.href= url;
-        //     a.download = name;
-        //     a.style = "display: none";
-        //     document.body.appendChild(a);
-        //     a.click();
-        //     window.URL.revokeObjectURL(url);
-        //     a.remove();
-        // }
         LevelParsr.prototype.getThingID = function (entry) {
             switch (entry.thing) {
                 case 'Block':
@@ -246,20 +225,6 @@ var LevelParsr;
             }
             console.log(resultArr);
         };
-        // listAllUniqueElements() {
-        //     let _things = [];
-        //     let _macros = [];
-        //     for (var mapID in maps.library) {
-        //         if (mapID == "Random") continue;
-        //         for (var area of maps.library[mapID]["areas"]) {
-        //             for (var reference of area["creation"]) {
-        //                 if (reference.thing && !_things.includes(reference.thing)) _things.push(reference.thing);
-        //                 if (reference.macro && !_macros.includes(reference.macro)) _macros.push(reference.macro);
-        //             }
-        //         }
-        //     }
-        //     console.log({ things: _things, macros: _macros });
-        // }
         LevelParsr.prototype.listUniqueThings = function (creation) {
             var _things = [];
             var _macros = [];
@@ -340,8 +305,8 @@ var LevelParsr;
             if (reference.piranha) {
                 output.push({
                     "thing": "Piranha",
-                    "x": x + 4,
-                    "y": pipe.y + 12,
+                    "x": x,
+                    "y": pipe.y + 8,
                     "onPipe": true
                 });
             }
@@ -361,9 +326,8 @@ var LevelParsr;
             if (width > 16) {
                 output.push({
                     "thing": "TreeTrunk",
-                    "x": x + 8,
-                    "y": y - 8,
-                    "width": width - 16,
+                    "x": x,
+                    "y": y - 32,
                     "height": "Infinity",
                     "groupType": reference.solidTrunk ? "Solid" : "Scenery"
                 });
