@@ -11,7 +11,7 @@ FullScreenMario.FullScreenMario.settings.maps.library["1-4"] = {
             "creation": [
                 { "macro": "StartInsideCastle", "width": 104 },
                 { "thing": "Stone", "y": 88, "width": 192, "height": 24 },
-                { "macro": "Water", "x": 104, "y": 8, "width": 24 },
+                { "macro": "Water", "x": 104, "y": 8, "width": 16 },
                 { "macro": "Floor", "x": 120, "y": 24, "width": 88 },
                 { "thing": "Stone", "x": 184, "y": 64 },
                 { "thing": "CastleBlock", "x": 184, "y": 56 },

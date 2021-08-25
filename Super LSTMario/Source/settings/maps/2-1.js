@@ -82,7 +82,7 @@ FullScreenMario.FullScreenMario.settings.maps.library["2-1"] = {
                 { "macro": "Fill", "thing": "Brick", "x": 1480, "y": 32, "xnum": 2 },
                 { "thing": "Block", "x": 1488, "y": 64, "contents": "Coin", "hidden": true },
                 { "thing": "Springboard", "x": 1504, "y": 14.5 },
-                { "macro": "Fill", "thing": "Stone", "x": 1520, "y": 80, "xnum": 2, "height": 80 },
+                { "thing": "Stone", "x": 1520, "y": 80, "width": 16, "height": 80 },
                 { "macro": "EndOutsideCastle", "x": 1600, "transport": { "map": "2-2" } }
             ]
         }, {
