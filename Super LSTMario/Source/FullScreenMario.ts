@@ -2415,7 +2415,7 @@ module FullScreenMario {
 
             let preThings = FSM.AreaSpawner.getPreThings();
             console.log(preThings);
-            FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
+            FSM.LevelParser.parse(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], "Random", null, FSM);
         }
 
         
@@ -2423,11 +2423,15 @@ module FullScreenMario {
             FSM.setMap("Random");
         }
 
-        parseLSTMLevel(FSM: IFullScreenMario, data: Array<Array<number>>): void {
+        parseOriginalLevels(FSM: IFullScreenMario): void {
+            FSM.LevelParser.parseOriginal(FSM);
+        }
+
+        parseLSTMLevel(FSM: IFullScreenMario, data: Array<Array<number>>, levelName: string): void {
             let lstmarioLevel = FSM.LevelParser.parseLSTMToLevel(data, FSM);
 
-            FSM.MapsCreator.storeMap("LSTMario", lstmarioLevel);
-            FSM.setMap("LSTMario");
+            FSM.MapsCreator.storeMap(levelName, lstmarioLevel);
+            FSM.setMap(levelName);
         }
 
         /**

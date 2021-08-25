@@ -1872,15 +1872,18 @@ var FullScreenMario;
             FSM.AreaSpawner.spawnArea("xInc", FSM.QuadsKeeper.top / FSM.unitsize, FSM.QuadsKeeper.right / FSM.unitsize, FSM.QuadsKeeper.bottom / FSM.unitsize, FSM.QuadsKeeper.left / FSM.unitsize);
             var preThings = FSM.AreaSpawner.getPreThings();
             console.log(preThings);
-            FSM.LevelParser.parseRandom(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], FSM);
+            FSM.LevelParser.parse(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], "Random", null, FSM);
         };
         FullScreenMario.prototype.generateRandomMap = function (FSM) {
             FSM.setMap("Random");
         };
-        FullScreenMario.prototype.parseLSTMLevel = function (FSM, data) {
+        FullScreenMario.prototype.parseOriginalLevels = function (FSM) {
+            FSM.LevelParser.parseOriginal(FSM);
+        };
+        FullScreenMario.prototype.parseLSTMLevel = function (FSM, data, levelName) {
             var lstmarioLevel = FSM.LevelParser.parseLSTMToLevel(data, FSM);
-            FSM.MapsCreator.storeMap("LSTMario", lstmarioLevel);
-            FSM.setMap("LSTMario");
+            FSM.MapsCreator.storeMap(levelName, lstmarioLevel);
+            FSM.setMap(levelName);
         };
         /**
          * Activation callback for starting spawnRandomCheep on an interval.
