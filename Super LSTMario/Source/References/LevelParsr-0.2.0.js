@@ -3,13 +3,14 @@ var LevelParsr;
     "use strict";
     var LevelParsr = (function () {
         function LevelParsr() {
-            this.RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "Koopa", "Stone", "Flag", "CastleSmall", "Coin", "PipeHorizontal", "PipeVertical", "Piranha",
-                "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "Platform", "PlatformTrack", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
+            this.RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "PipePiranha", "Koopa", "Stone", "CastleSmall", "Coin",
+                "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "TreeTrunkSolid", "Platform", "PlatformFloating", "PlatformSliding", "PlatformFalling", "PlatformTrack", "Scale", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
                 "Springboard", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon",
-                "Fence", "CastleWall"];
+                "StartInsideCastle", "EndInsideCastle", "EndOutsideCastle", "CastleBlockFireBalls"];
             this.RELEVANT_MACROS = ["Floor", "Pipe", "Fill", "Ceiling", "PlatformGenerator", "Tree", "Water", "StartInsideCastle",
                 "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge"];
             this.CONTENTS = ["Mushroom", "Mushroom1Up", "Coin", "Star", "Vine", "HiddenCoin"];
+            this.ORDER = ["TreeTrunk", "TreeTrunkSolid", "TreeTop"];
             this.macros = {
                 "Fill": this.macroFillPreThings,
                 "Floor": this.macroFloor,
@@ -34,28 +35,70 @@ var LevelParsr;
             };
             this.randCounter = 0;
         }
-        LevelParsr.prototype.parseRandom = function (creation, FSM) {
+        LevelParsr.prototype.parseOriginal = function (FSM) {
+            var maps = FSM.settings.maps.library;
+            for (var mapID in maps) {
+                if (mapID == "Random")
+                    continue;
+                var map = maps[mapID];
+                for (var areaID in map.areas) {
+                    var area = map.areas[areaID];
+                    this.parse(area.creation, mapID, areaID, FSM);
+                }
+            }
+        };
+        LevelParsr.prototype.parse = function (creation, mapID, area, FSM) {
             var _this = this;
             console.log("Length prior to filtering: " + creation.length);
-            creation = creation.filter(function (entry) {
-                return entry.reference.macro && _this.RELEVANT_MACROS.indexOf(entry.reference.macro) !== -1 ||
-                    entry.thing && _this.RELEVANT_THINGS.indexOf(entry.thing.title) !== -1;
-            });
+            if (mapID == "Random") {
+                creation = creation.filter(function (entry) {
+                    return entry.reference.macro && _this.RELEVANT_MACROS.indexOf(entry.reference.macro) !== -1 ||
+                        entry.thing && _this.RELEVANT_THINGS.indexOf(entry.thing.title) !== -1;
+                });
+            }
+            else {
+                creation = creation.filter(function (entry) {
+                    return entry.macro && _this.RELEVANT_MACROS.indexOf(entry.macro) !== -1 ||
+                        entry.thing && _this.RELEVANT_THINGS.indexOf(entry.thing) !== -1;
+                });
+            }
             console.log("Length after filtering: " + creation.length);
             var resultList = [];
-            for (var _a = 0; _a < creation.length; _a++) {
-                var entry = creation[_a];
-                var ref = entry.reference;
-                if (this.RELEVANT_MACROS.indexOf(ref.thing) !== -1) {
-                    var result = this.macros[ref.thing](ref, FSM);
+            for (var _i = 0; _i < creation.length; _i++) {
+                var entry = creation[_i];
+                // let ref = entry.reference;
+                // if (this.RELEVANT_MACROS.indexOf(ref.thing) !== -1) {
+                //     let result = this.macros[ref.thing](ref, FSM);
+                //     resultList.push(...result);
+                // }
+                // else {
+                //     if (ref.thing == "Platform" && ref.sliding) {
+                //         resultList.push(...this.macroSlidingPlatform(ref, FSM));
+                //     }
+                //     else resultList.push(ref);
+                // }
+                if (this.RELEVANT_MACROS.indexOf(entry.macro) !== -1) {
+                    var result = this.macros[entry.macro](entry, FSM);
                     resultList.push.apply(resultList, result);
                 }
                 else {
-                    if (ref.thing == "Platform" && ref.sliding) {
-                        resultList.push.apply(resultList, this.macroSlidingPlatform(ref, FSM));
+                    if (entry.thing == "Platform" && entry.sliding) {
+                        resultList.push.apply(resultList, this.macroSlidingPlatform(entry, FSM));
+                    }
+                    else if (entry.thing == "Platform" && entry.floating) {
+                        resultList.push.apply(resultList, this.macroFloatingPlatform(entry, FSM));
+                    }
+                    else if (entry.thing == "Platform" && entry.falling) {
+                        resultList.push({ "thing": "PlatformFalling", "x": entry.x, "y": entry.y });
+                    }
+                    else if (entry.thing == "Stone" && (entry.height || entry.width)) {
+                        resultList.push.apply(resultList, this.macroStonePillar(entry, FSM));
+                    }
+                    else if (entry.thing == "CastleBlock" && entry.fireballs) {
+                        resultList.push({ "thing": "CastleBlockFireBalls", "x": entry.x, "y": entry.y });
                     }
                     else
-                        resultList.push(ref);
+                        resultList.push(entry);
                 }
             }
             console.log("Resulting list: " + resultList.length);
@@ -64,12 +107,13 @@ var LevelParsr;
             var maxX = Math.ceil(lastXIndex / 8) + 1;
             var maxY = 14;
             var gridArray = this.createGridArray(maxX, maxY, 0);
-            for (var _b = 0; _b < resultList.length; _b++) {
-                var item = resultList[_b];
+            for (var _a = 0; _a < resultList.length; _a++) {
+                var item = resultList[_a];
                 // if x or y are not given, pick 0 as default
-                gridArray[Math.ceil((item.x || 0) / 8)][Math.ceil((item.y || 0) / 8)] = this.getThingID(item);
+                if (gridArray[Math.ceil((item.x || 0) / 8)][Math.ceil((item.y || 0) / 8)] != this.getThingID({ "thing": "TreeTop" }))
+                    gridArray[Math.ceil((item.x || 0) / 8)][Math.ceil((item.y || 0) / 8)] = this.getThingID(item);
             }
-            this.printParsed("Random", this.randCounter++, gridArray);
+            this.printParsed(mapID, mapID == "Random" ? this.randCounter++ : area, gridArray);
             // randCounter++;
         };
         LevelParsr.prototype.parseLSTMToLevel = function (data, FSM) {
@@ -79,7 +123,7 @@ var LevelParsr;
             var levelObj = {
                 "name": "LSTMario",
                 "locations": [
-                    { "entry": "Plain" }
+                    { "entry": "Castle" }
                 ],
                 "areas": [
                     {
@@ -95,8 +139,11 @@ var LevelParsr;
             for (var _x = 0; _x < data.length; _x++) {
                 for (var _y = 0; _y < data[_x].length; _y++) {
                     // Filter out Air
-                    if (data[_x][_y] != 0)
-                        creation.push(this.parseBack(_x * 8, _y * 8, data[_x][_y]));
+                    if (data[_x][_y] != 0) {
+                        var result = this.parseBack(_x * 8, _y * 8, data[_x][_y]);
+                        if (result)
+                            creation.push(result);
+                    }
                 }
             }
             console.log("Parsed " + data.length);
@@ -114,6 +161,13 @@ var LevelParsr;
                 var idThing = this.getIDThing(_id);
                 if (idThing == "PlatformGeneratorUp" || idThing == "PlatformGeneratorDown")
                     idThing = "PlatformGenerator";
+                else if (idThing == "PipePiranha") {
+                    idThing = "Pipe";
+                    creationObj["piranha"] = true;
+                }
+                // PlatformTrack is used to describe the platform's movement, it's not used when parsing back
+                if (idThing == "PlatformTrack")
+                    return;
                 // If macros contain idThing -> set macro instead of thing
                 if (this.RELEVANT_MACROS.indexOf(idThing) != -1) {
                     creationObj["macro"] = idThing;
@@ -121,8 +175,7 @@ var LevelParsr;
                         case "Floor":
                             if (_y == 0)
                                 creationObj["height"] = "Infinity";
-                        case "TreeTrunk":
-                        case "ShroomTrunk":
+                            break;
                         case "Pipe":
                             creationObj["height"] = "Infinity";
                         case "Water":
@@ -132,33 +185,74 @@ var LevelParsr;
                             if (_id == this.RELEVANT_THINGS.indexOf("PlatformGeneratorDown"))
                                 creationObj["direction"] = -1;
                             break;
+                        case "EndOutsideCastle":
+                        case "CastleSmall":
+                        case "CastleLarge":
+                            creationObj["y"] -= 8;
+                            break;
                         default:
                             break;
                     }
                 }
-                else if (idThing == "PlatformTrack") {
+                else if (idThing == "Stone" && _y == 0) {
+                    creationObj["thing"] = this.RELEVANT_THINGS[_id];
+                    creationObj["height"] = "Infinity";
+                }
+                else if (idThing == "Platform") {
+                    creationObj["thing"] = "Platform";
+                    creationObj["width"] = 24;
+                }
+                else if (idThing == "PlatformSliding" || idThing == "PlatformFloating" || idThing == "PlatformFalling") {
                     // { "thing": "Platform", "x": 688, "y": 40, "width": 24, "sliding": true, "begin": 660, "end": 720 },
                     creationObj["thing"] = "Platform";
-                    creationObj["sliding"] = true;
-                    creationObj["begin"] = Math.max(_x - 128, 0);
-                    creationObj["end"] = _x + 128;
+                    creationObj["width"] = 24;
+                    if (idThing == "PlatformSliding") {
+                        creationObj["sliding"] = true;
+                        creationObj["begin"] = Math.max(_x - 32, 0);
+                        creationObj["end"] = _x + 32;
+                    }
+                    else if (idThing == "PlatformFloating") {
+                        creationObj["floating"] = true;
+                        creationObj["begin"] = Math.max(_y - 16, 0);
+                        creationObj["end"] = _y + 16;
+                    }
+                    else {
+                        creationObj["falling"] = true;
+                    }
+                }
+                else if (idThing == "TreeTrunk" || idThing == "TreeTrunkSolid" || idThing == "ShroomTrunk") {
+                    creationObj["groupType"] = idThing == "TreeTrunkSolid" ? "Solid" : "Scenery";
+                    creationObj["thing"] = idThing == "TreeTrunkSolid" ? "TreeTrunk" : idThing;
+                    creationObj["height"] = "Infinity";
+                    creationObj["width"] = 8;
+                }
+                else if (idThing == "CastleBlockFireBalls") {
+                    // { "thing": "CastleBlock", "x": 160, "y": 46, "fireballs": 6, "hidden": true },
+                    creationObj["thing"] = "CastleBlock";
+                    creationObj["fireballs"] = 6;
                 }
                 else
                     creationObj["thing"] = this.RELEVANT_THINGS[_id];
             }
             else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length) {
                 creationObj["thing"] = "Block";
-                creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length];
-            }
-            else if (_id < this.RELEVANT_THINGS.length + this.CONTENTS.length * 2) {
-                creationObj["thing"] = "Brick";
-                creationObj["contents"] = this.CONTENTS[_id - this.RELEVANT_THINGS.length - this.CONTENTS.length];
+                var content = this.CONTENTS[_id - this.RELEVANT_THINGS.length];
+                if (content == "HiddenCoin") {
+                    creationObj["contents"] = "Coin";
+                    creationObj["hidden"] = true;
+                }
+                else
+                    creationObj["contents"] = content;
             }
             else {
-                // { "thing": "CastleBlock", "x": 160, "y": 46, "fireballs": 6, "hidden": true },
-                creationObj["thing"] = "CastleBlock";
-                creationObj["fireballs"] = 6;
-                creationObj["hidden"] = true;
+                creationObj["thing"] = "Brick";
+                var content = this.CONTENTS[_id - this.RELEVANT_THINGS.length - this.CONTENTS.length];
+                if (content == "HiddenCoin") {
+                    creationObj["contents"] = "Coin";
+                    creationObj["hidden"] = true;
+                }
+                else
+                    creationObj["contents"] = content;
             }
             return creationObj;
         };
@@ -228,8 +322,8 @@ var LevelParsr;
         LevelParsr.prototype.listUniqueThings = function (creation) {
             var _things = [];
             var _macros = [];
-            for (var _a = 0; _a < creation.length; _a++) {
-                var reference = creation[_a];
+            for (var _i = 0; _i < creation.length; _i++) {
+                var reference = creation[_i];
                 if (reference.thing && _things.indexOf(reference.thing) === -1)
                     _things.push(reference.thing);
                 if (reference.macro && _macros.indexOf(reference.macro) === -1)
@@ -241,6 +335,8 @@ var LevelParsr;
         //#region Macros
         // "Fill": FullScreenMario.FullScreenMario.prototype.macroFillPreThings,
         LevelParsr.prototype.macroFillPreThings = function (reference, FSM) {
+            if (reference.thing == "CastleBlock" && reference.fireballs)
+                reference.thing = "CastleBlockFireBalls";
             var xnum = reference.xnum || 1, ynum = reference.ynum || 1, xwidth = reference.xwidth || 8, yheight = reference.yheight || 8, x = reference.x || 0, yref = reference.y || 0, outputs = [], output, o = 0, y, i, j;
             for (i = 0; i < xnum; ++i) {
                 y = yref;
@@ -286,65 +382,56 @@ var LevelParsr;
         ;
         // "Pipe": FullScreenMario.FullScreenMario.prototype.macroPipe,
         LevelParsr.prototype.macroPipe = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, height = reference.height || 16, pipe = FSM.proliferate({
-                "thing": "Pipe",
+            var x = reference.x || 0, y = reference.y || 0, height = reference.height || 16, output = FSM.proliferate({
+                "thing": (reference.piranha ? "PipePiranha" : "Pipe"),
                 "x": x,
                 "y": y,
                 "width": 16,
                 "height": reference.height === Infinity
                     ? "Infinity"
                     : reference.height || 8
-            }, reference, true), output = [pipe];
-            pipe.macro = undefined;
-            if (height === "Infinity" || height === Infinity) {
-                pipe.height = 99;
-            }
-            else {
-                pipe.y += height;
-            }
-            if (reference.piranha) {
-                output.push({
-                    "thing": "Piranha",
-                    "x": x,
-                    "y": pipe.y + 8,
-                    "onPipe": true
-                });
-            }
-            return output;
+            }, reference, true);
+            output.macro = undefined;
+            if (height === "Infinity" || height === Infinity)
+                output.height = 99;
+            else
+                output.y += height;
+            return [output];
         };
         ;
         // "Tree": FullScreenMario.FullScreenMario.prototype.macroTree,
         LevelParsr.prototype.macroTree = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 24, output = [
-                {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 24, outputs = [];
+            for (var _x = x; _x < x + width; _x += 8) {
+                outputs.push({
                     "thing": "TreeTop",
-                    "x": x,
-                    "y": y,
-                    "width": width
-                }
-            ];
-            if (width > 16) {
-                output.push({
-                    "thing": "TreeTrunk",
-                    "x": x,
-                    "y": y - 32,
-                    "height": "Infinity",
-                    "groupType": reference.solidTrunk ? "Solid" : "Scenery"
+                    "x": _x,
+                    "y": y
                 });
             }
-            return output;
+            for (var _trunkX = x + 8; _trunkX < x + width - 8; _trunkX += 8) {
+                for (var _trunkY = y - 8; _trunkY >= 0; _trunkY -= 8) {
+                    outputs.push({
+                        "thing": (reference.solidTrunk ? "TreeTrunkSolid" : "TreeTrunk"),
+                        "x": _trunkX,
+                        "y": _trunkY
+                    });
+                }
+            }
+            return outputs;
         };
         ;
         // "Shroom": FullScreenMario.FullScreenMario.prototype.macroShroom,
         LevelParsr.prototype.macroShroom = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 24, output = [
-                {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 24, output = [];
+            for (var _x = x; _x < x + width; _x += 8) {
+                output.push({
                     "thing": "ShroomTop",
-                    "x": x,
+                    "x": _x,
                     "y": y,
-                    "width": width
-                }
-            ];
+                    "width": 8
+                });
+            }
             if (width > 16) {
                 output.push({
                     "thing": "ShroomTrunk",
@@ -359,18 +446,22 @@ var LevelParsr;
         ;
         // "Water": FullScreenMario.FullScreenMario.prototype.macroWater,
         LevelParsr.prototype.macroWater = function (reference, FSM) {
-            return [FSM.proliferate({
+            var y = reference.y || 0, startX = reference.x || 0, width = reference.width || 16, endX = startX + width, output = [];
+            for (var _x = startX; _x < endX; _x += 8) {
+                output.push({
                     "thing": "Water",
-                    "x": reference.x || 0,
-                    "y": (reference.y || 0) + 2,
+                    "x": _x,
+                    "y": y,
                     "height": "Infinity",
-                    "macro": undefined
-                }, reference, true)];
+                    "width": 8
+                });
+            }
+            return output;
         };
         ;
         // "Ceiling": FullScreenMario.FullScreenMario.prototype.macroCeiling,
         LevelParsr.prototype.macroCeiling = function (reference, FSM) {
-            return this.macros["Fill"]({
+            return FSM.LevelParser.macros["Fill"]({
                 "thing": "Brick",
                 "x": reference.x,
                 "y": 88,
@@ -383,21 +474,20 @@ var LevelParsr;
             var x = reference.x || 0, y = reference.y || 0;
             return [{
                     "thing": "CastleSmall",
-                    "x": x + 16,
-                    "y": y + 20,
-                    "position": "end"
+                    "x": x,
+                    "y": y + 8
                 }];
         };
         LevelParsr.prototype._coordsCastleLarge = function (reference, FSM) {
             var x = reference.x || 0, y = reference.y || 0;
-            return this.macros["CastleSmall"]({
+            return FSM.LevelParser.macros["CastleSmall"]({
                 "x": x + 16,
                 "y": y + 48
             }, FSM).concat([
                 {
                     "thing": "CastleLarge",
                     "x": x + 16,
-                    "y": y,
+                    "y": y + 8,
                     "position": "end"
                 }
             ]);
@@ -405,48 +495,46 @@ var LevelParsr;
         // "Bridge": FullScreenMario.FullScreenMario.prototype.macroBridge,
         LevelParsr.prototype.macroBridge = function (reference, FSM) {
             var x = reference.x || 0, y = reference.y || 0, width = Math.max(reference.width || 0, 16), output = [];
+            // Between any columns is a BridgeBase with a Railing on top
             // A beginning column reduces the width and pushes it forward
             if (reference.begin) {
                 width -= 8;
-                output.push({
-                    "thing": "Stone",
-                    "x": x,
-                    "y": y,
-                    "height": "Infinity"
-                });
+                for (var _y = y; _y >= 0; _y -= 8) {
+                    output.push({
+                        "thing": "Stone",
+                        "x": x,
+                        "y": _y,
+                        "height": "Infinity"
+                    });
+                }
                 x += 8;
             }
             // An ending column just reduces the width 
             if (reference.end) {
                 width -= 8;
-                output.push({
-                    "thing": "Stone",
-                    "x": x + width,
-                    "y": y,
-                    "height": "Infinity"
-                });
+                for (var _y = y; _y >= 0; _y -= 8) {
+                    output.push({
+                        "thing": "Stone",
+                        "x": x + width,
+                        "y": _y,
+                        "height": "Infinity"
+                    });
+                }
             }
-            // Between any columns is a BridgeBase with a Railing on top
-            output.push({ "thing": "BridgeBase", "x": x, "y": y, "width": width });
-            output.push({ "thing": "Railing", "x": x, "y": y + 4, "width": width });
+            for (var _x = x; _x < x + width; _x += 8) {
+                output.push({ "thing": "BridgeBase", "x": _x, "y": y });
+                output.push({ "thing": "Railing", "x": _x, "y": y + 8 });
+            }
             return output;
         };
         ;
         LevelParsr.prototype._coordsScale = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, unitsize = 8, widthLeft = reference.widthLeft || 24, widthRight = reference.widthRight || 24, between = reference.between || 40, dropLeft = reference.dropLeft || 24, dropRight = reference.dropRight || 24, collectionName = "ScaleCollection--" + [
-                x, y, widthLeft, widthRight, dropLeft, dropRight
-            ].join(",");
+            var x = reference.x || 0, y = reference.y || 0;
             return [
                 {
-                    "thing": "Platform",
-                    "x": x + between - (widthRight / 2),
-                    "y": y - dropRight,
-                    "width": widthRight,
-                    "inScale": true,
-                    "tension": (dropRight - 1.5) * unitsize,
-                    // "onThingAdd": FSM.spawnScalePlatform,
-                    "collectionName": collectionName,
-                    "collectionKey": "platformRight"
+                    "thing": "Scale",
+                    "x": x,
+                    "y": y
                 }];
         };
         LevelParsr.prototype._coordsPlatformGenerator = function (reference, FSM) {
@@ -467,42 +555,54 @@ var LevelParsr;
                 };
                 outputs.push(output);
             }
-            for (var _i = 0; _i < width; _i += 8) {
+            outputs.push(output = {
+                "thing": "PlatformSliding",
+                "x": x,
+                "y": y
+            });
+            return outputs;
+        };
+        LevelParsr.prototype.macroFloatingPlatform = function (reference, FSM) {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 16, begin = reference.begin, end = reference.end, outputs = [], output;
+            for (var _y = begin; _y < end; _y += 8) {
                 output = {
-                    "thing": "Platform",
-                    "x": x + _i,
-                    "y": y
+                    "thing": "PlatformTrack",
+                    "x": x,
+                    "y": _y
                 };
                 outputs.push(output);
+            }
+            outputs.push({
+                "thing": "PlatformFloating",
+                "x": x,
+                "y": y
+            });
+            return outputs;
+        };
+        LevelParsr.prototype.macroStonePillar = function (reference, FSM) {
+            var x = reference.x || 0, y = reference.y || 0, height = reference.height || 0, width = reference.width || 8, outputs = [];
+            for (var _x = x; _x < x + width; _x += 8) {
+                for (var _y = y; _y >= y - height; _y -= 8) {
+                    outputs.push({
+                        "thing": "Stone",
+                        "x": _x,
+                        "y": _y
+                    });
+                }
             }
             return outputs;
         };
         // "StartInsideCastle": FullScreenMario.FullScreenMario.prototype.macroStartInsideCastle,
         LevelParsr.prototype.macroStartInsideCastle = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, width = (reference.width || 0) - 40, output = [
-                {
-                    "thing": "Stone",
+            var x = reference.x || 0, y = reference.y || 0, width = (reference.width || 0) - 40;
+            var output = [{
+                    "thing": "StartInsideCastle",
                     "x": x,
-                    "y": y + 48,
-                    "width": 24,
-                    "height": Infinity
-                },
-                {
-                    "thing": "Stone",
-                    "x": x + 24,
-                    "y": y + 40,
-                    "width": 8,
-                    "height": Infinity
-                },
-                {
-                    "thing": "Stone",
-                    "x": x + 32,
-                    "y": y + 32,
-                    "width": 8,
-                    "height": Infinity
+                    "y": y
                 }];
             if (width > 0) {
-                output.push.apply(output, this.macros["Floor"]({
+                output.push.apply(output, FSM.LevelParser.macros["Floor"]({
+                    "macro": "Floor",
                     "x": x + 40,
                     "y": y + 24,
                     "width": width
@@ -512,75 +612,33 @@ var LevelParsr;
         };
         ;
         LevelParsr.prototype._contentsEndOutsideCastle = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, collectionName = "EndOutsideCastle-" + [
-                reference.x, reference.y, reference.large].join(",");
-            var output = [
-                // // Flag (scenery)
-                // {
-                //     "thing": "Flag", "x": x, "y": y + 80,
-                //     "collectionName": collectionName,
-                //     "collectionKey": "Flag"
-                // },
-                // {
-                //     "thing": "FlagTop", "x": x, "y": y + 88,
-                //     "collectionName": collectionName,
-                //     "collectionKey": "FlagTop"
-                // },
-                // // Bottom stone
-                {
-                    "thing": "Flag",
+            var x = reference.x || 0, y = reference.y || 0;
+            var output = [{
+                    "thing": "EndOutsideCastle",
                     "x": x,
                     "y": y + 8
                 }];
-            // for (var _y = y + 8; _y < y + 80; _y += 8)
-            //     output.push({
-            //         "thing": "FlagPole", "x": x, "y": _y,
-            //         "collectionName": collectionName,
-            //         "collectionKey": "FlagPole"
-            //     });
-            if (reference.large) {
-                output.push.apply(output, this.macros["CastleLarge"]({
-                    "x": x + (reference.castleDistance || 24),
-                    "y": y,
-                    "transport": reference.transport,
-                    "walls": reference.walls || 8
-                }, FSM));
-            }
-            else {
-                output.push.apply(output, this.macros["CastleSmall"]({
-                    "x": x + (reference.castleDistance || 32),
-                    "y": y,
-                    "transport": reference.transport
-                }, FSM));
-            }
+            // if (reference.large) {
+            //     output.push(...FSM.LevelParser.macros["CastleLarge"]({
+            //         "x": x + (reference.castleDistance || 24),
+            //         "y": y,
+            //     }, FSM));
+            // }
+            // else {
+            //     output.push(...FSM.LevelParser.macros["CastleSmall"]({
+            //         "x": x + (reference.castleDistance || 32),
+            //         "y": y,
+            //     }, FSM));
+            // }
             return output;
         };
         LevelParsr.prototype._contentsEndInsideCastle = function (reference, FSM) {
             var x = reference.x || 0, y = reference.y || 0, npc = reference.npc || "Toad";
-            return [
-                { "thing": "Stone", "x": x, "y": y + 88, "width": 256 }
-            ].concat(this.macros["Water"]({ "x": x, "y": y, "width": 104 }, FSM), [
-                // Bridge & Bowser area
-                { "thing": "CastleBridge", "x": x, "y": y + 24, "width": 104 },
-                {
-                    "thing": "Bowser", "x": x + 69, "y": y + 42,
-                    "hard": reference.hard,
-                    "spawnType": reference.spawnType || "Goomba",
-                    "throwing": reference.throwing
-                },
-                { "thing": "CastleChain", "x": x + 96, "y": y + 32 },
-                // Axe area
-                { "thing": "CastleAxe", "x": x + 104, "y": y + 40 }
-            ], this.macros["Floor"]({ "x": x + 104, "y": y, "width": 152 }, FSM), [
-                {
-                    "thing": "Stone", "x": x + 104, "y": y + 32,
-                    "width": 24, "height": 32
-                },
-                {
-                    "thing": "Stone", "x": x + 112, "y": y + 80,
-                    "width": 16, "height": 24
-                },
-            ]);
+            return [{
+                    "thing": "EndInsideCastle",
+                    "x": x,
+                    "y": y
+                }];
         };
         return LevelParsr;
     })();
