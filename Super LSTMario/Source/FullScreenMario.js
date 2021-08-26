@@ -1871,7 +1871,6 @@ var FullScreenMario;
             FSM.WorldSeeder.runGeneratedCommands();
             FSM.AreaSpawner.spawnArea("xInc", FSM.QuadsKeeper.top / FSM.unitsize, FSM.QuadsKeeper.right / FSM.unitsize, FSM.QuadsKeeper.bottom / FSM.unitsize, FSM.QuadsKeeper.left / FSM.unitsize);
             var preThings = FSM.AreaSpawner.getPreThings();
-            console.log(preThings);
             FSM.LevelParser.parse(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], "Random", null, FSM);
         };
         FullScreenMario.prototype.generateRandomMap = function (FSM) {

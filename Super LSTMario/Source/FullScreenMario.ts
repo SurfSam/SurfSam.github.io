@@ -2414,7 +2414,6 @@ module FullScreenMario {
                 FSM.QuadsKeeper.left / FSM.unitsize);
 
             let preThings = FSM.AreaSpawner.getPreThings();
-            console.log(preThings);
             FSM.LevelParser.parse(FSM.AreaSpawner.getPreThings()["Text"]["xInc"], "Random", null, FSM);
         }
 
