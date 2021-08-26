@@ -81,32 +81,32 @@ module LevelParsr {
             }
             console.log(`Length after filtering: ${creation.length}`);
 
+            // creation.forEach(entry => console.log(entry));
+            // console.log("------------------------------------");
+
             let resultList = [];
             for (var entry of creation) {
 
-                // let ref = entry.reference;
 
-                // if (this.RELEVANT_MACROS.indexOf(ref.thing) !== -1) {
-                //     let result = this.macros[ref.thing](ref, FSM);
+                if (mapID == "Random") entry = entry.reference;
 
-                //     resultList.push(...result);
-                // }
-                // else {
+                // console.log(entry);
+                let macro = mapID == "Random" ? entry.thing : entry.macro;
 
-                //     if (ref.thing == "Platform" && ref.sliding) {
-                //         resultList.push(...this.macroSlidingPlatform(ref, FSM));
-                //     }
-                //     else resultList.push(ref);
-                // }
-
-                if (this.RELEVANT_MACROS.indexOf(entry.macro) !== -1) {
-                    let result = this.macros[entry.macro](entry, FSM);
+                if (this.RELEVANT_MACROS.indexOf(macro) !== -1) {
+                    let result = this.macros[macro](entry, FSM);
 
                     resultList.push(...result);
                 }
                 else {
 
-                    if (entry.thing == "Platform" && entry.sliding) {
+                    if (entry.thing == "BridgeBase") {
+                        resultList.push(...this.macroBridgeBase(entry, FSM));
+                    }
+                    else if(entry.thing == "Railing") {
+                        resultList.push(...this.macroBridgeRailing(entry, FSM));
+                    }
+                    else if (entry.thing == "Platform" && entry.sliding) {
                         resultList.push(...this.macroSlidingPlatform(entry, FSM));
                     }
                     else if (entry.thing == "Platform" && entry.floating) {
@@ -653,6 +653,34 @@ module LevelParsr {
             }]
         }
 
+        macroBridgeBase(reference, FSM) {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 8, outputs = [];
+
+            for (let _x = x; _x < x + width; _x += 8) {
+                outputs.push({
+                    "thing": "BridgeBase",
+                    "x": _x,
+                    "y": y
+                });
+            }
+
+            return outputs;
+        }
+
+        macroBridgeRailing(reference, FSM) {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 8, outputs = [];
+
+            for (let _x = x; _x < x + width; _x += 8) {
+                outputs.push({
+                    "thing": "Railing",
+                    "x": _x,
+                    "y": y
+                });
+            }
+
+            return outputs;
+        }
+
         macroSlidingPlatform(reference, FSM) {
             var x = reference.x || 0, y = reference.y || 0, width = reference.width || 16, begin = reference.begin, end = reference.end, outputs = [], output;
 
@@ -698,10 +726,10 @@ module LevelParsr {
         }
 
         macroStonePillar(reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, height = reference.height || 0, width = reference.width || 8, outputs = [];
+            var x = reference.x || 0, y = reference.y || 0, startY = reference.height == "Infinity" ? 0 : y - (reference.height || 0), width = reference.width || 8, outputs = [];
 
             for (let _x = x; _x < x + width; _x += 8) {
-                for (let _y = y; _y >= y - height; _y -= 8) {
+                for (let _y = startY; _y <= y; _y += 8) {
                     outputs.push({
                         "thing": "Stone",
                         "x": _x,

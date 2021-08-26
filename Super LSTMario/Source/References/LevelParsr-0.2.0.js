@@ -63,26 +63,27 @@ var LevelParsr;
                 });
             }
             console.log("Length after filtering: " + creation.length);
+            // creation.forEach(entry => console.log(entry));
+            // console.log("------------------------------------");
             var resultList = [];
             for (var _i = 0; _i < creation.length; _i++) {
                 var entry = creation[_i];
-                // let ref = entry.reference;
-                // if (this.RELEVANT_MACROS.indexOf(ref.thing) !== -1) {
-                //     let result = this.macros[ref.thing](ref, FSM);
-                //     resultList.push(...result);
-                // }
-                // else {
-                //     if (ref.thing == "Platform" && ref.sliding) {
-                //         resultList.push(...this.macroSlidingPlatform(ref, FSM));
-                //     }
-                //     else resultList.push(ref);
-                // }
-                if (this.RELEVANT_MACROS.indexOf(entry.macro) !== -1) {
-                    var result = this.macros[entry.macro](entry, FSM);
+                if (mapID == "Random")
+                    entry = entry.reference;
+                // console.log(entry);
+                var macro = mapID == "Random" ? entry.thing : entry.macro;
+                if (this.RELEVANT_MACROS.indexOf(macro) !== -1) {
+                    var result = this.macros[macro](entry, FSM);
                     resultList.push.apply(resultList, result);
                 }
                 else {
-                    if (entry.thing == "Platform" && entry.sliding) {
+                    if (entry.thing == "BridgeBase") {
+                        resultList.push.apply(resultList, this.macroBridgeBase(entry, FSM));
+                    }
+                    else if (entry.thing == "Railing") {
+                        resultList.push.apply(resultList, this.macroBridgeRailing(entry, FSM));
+                    }
+                    else if (entry.thing == "Platform" && entry.sliding) {
                         resultList.push.apply(resultList, this.macroSlidingPlatform(entry, FSM));
                     }
                     else if (entry.thing == "Platform" && entry.floating) {
@@ -545,6 +546,28 @@ var LevelParsr;
                     "y": 0
                 }];
         };
+        LevelParsr.prototype.macroBridgeBase = function (reference, FSM) {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 8, outputs = [];
+            for (var _x = x; _x < x + width; _x += 8) {
+                outputs.push({
+                    "thing": "BridgeBase",
+                    "x": _x,
+                    "y": y
+                });
+            }
+            return outputs;
+        };
+        LevelParsr.prototype.macroBridgeRailing = function (reference, FSM) {
+            var x = reference.x || 0, y = reference.y || 0, width = reference.width || 8, outputs = [];
+            for (var _x = x; _x < x + width; _x += 8) {
+                outputs.push({
+                    "thing": "Railing",
+                    "x": _x,
+                    "y": y
+                });
+            }
+            return outputs;
+        };
         LevelParsr.prototype.macroSlidingPlatform = function (reference, FSM) {
             var x = reference.x || 0, y = reference.y || 0, width = reference.width || 16, begin = reference.begin, end = reference.end, outputs = [], output;
             for (var _x = begin; _x < end; _x += 8) {
@@ -580,9 +603,9 @@ var LevelParsr;
             return outputs;
         };
         LevelParsr.prototype.macroStonePillar = function (reference, FSM) {
-            var x = reference.x || 0, y = reference.y || 0, height = reference.height || 0, width = reference.width || 8, outputs = [];
+            var x = reference.x || 0, y = reference.y || 0, startY = reference.height == "Infinity" ? 0 : y - (reference.height || 0), width = reference.width || 8, outputs = [];
             for (var _x = x; _x < x + width; _x += 8) {
-                for (var _y = y; _y >= y - height; _y -= 8) {
+                for (var _y = startY; _y <= y; _y += 8) {
                     outputs.push({
                         "thing": "Stone",
                         "x": _x,
