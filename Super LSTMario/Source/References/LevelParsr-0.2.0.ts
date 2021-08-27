@@ -15,10 +15,10 @@ module LevelParsr {
         RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "PipePiranha", "Koopa", "Stone", "CastleSmall", "Coin",
             "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "TreeTrunkSolid", "Platform", "PlatformFloating", "PlatformSliding", "PlatformFalling", "PlatformTrack", "Scale", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
             "Springboard", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon",
-            "StartInsideCastle", "EndInsideCastle", "EndOutsideCastle", "CastleBlockFireBalls"];
+            "StartInsideCastle", "EndInsideCastle", "EndOutsideCastle", "CastleBlockFireBalls", "CheepsStart", "CheepsStop"];
 
         RELEVANT_MACROS = ["Floor", "Pipe", "Fill", "Ceiling", "PlatformGenerator", "Tree", "Water", "StartInsideCastle",
-            "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge"];
+            "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge", "CheepsStart", "CheepsStop"];
 
         CONTENTS = ["Mushroom", "Mushroom1Up", "Coin", "Star", "Vine", "HiddenCoin"];
 
@@ -37,8 +37,8 @@ module LevelParsr {
             "Bridge": this.macroBridge,
             "Scale": this._coordsScale,
             "PlatformGenerator": this._coordsPlatformGenerator,
-            // "CheepsStart": macroCheepsStart,
-            // "CheepsStop": macroCheepsStop,
+            "CheepsStart": this.macroCheepsStart,
+            "CheepsStop": this.macroCheepsStop,
             // "BulletBillsStart": macroBulletBillsStart,
             // "BulletBillsStop": macroBulletBillsStop,
             // "LakituStop": macroLakituStop,
@@ -86,7 +86,6 @@ module LevelParsr {
 
             let resultList = [];
             for (var entry of creation) {
-
 
                 if (mapID == "Random") entry = entry.reference;
 
@@ -797,29 +796,24 @@ module LevelParsr {
             }]
         }
 
-        // // "CheepsStart": FullScreenMario.FullScreenMario.prototype.macroCheepsStart,
-        // macroCheepsStart(reference) {
-        //     return {
-        //         "thing": "DetectCollision",
-        //         "x": reference.x || 0,
-        //         "y": FSM.MapScreener.floor,
-        //         "width": reference.width || 8,
-        //         "height": FSM.MapScreener.height / FSM.unitsize,
-        //         "activate": FSM.activateCheepsStart
-        //     };
-        // };
+        // "CheepsStart": FullScreenMario.FullScreenMario.prototype.macroCheepsStart,
+        macroCheepsStart(reference, FSM) {
+            return [{
+                "thing": "CheepsStart",
+                "x": reference.x || 0,
+                "y": FSM.MapScreener.floor,
+            }];
+        };
 
-        // // "CheepsStop": FullScreenMario.FullScreenMario.prototype.macroCheepsStop,
-        // macroCheepsStop(reference) {
-        //     return {
-        //         "thing": "DetectCollision",
-        //         "x": reference.x || 0,
-        //         "y": FSM.MapScreener.floor,
-        //         "width": reference.width || 8,
-        //         "height": FSM.MapScreener.height / FSM.unitsize,
-        //         "activate": FSM.activateCheepsStop
-        //     };
-        // };
+        // "CheepsStop": FullScreenMario.FullScreenMario.prototype.macroCheepsStop,
+        macroCheepsStop(reference, FSM) {
+            return [{
+                "thing": "CheepsStop",
+                "x": reference.x || 0,
+                "y": FSM.MapScreener.floor
+            }];
+        };
+        
         // // "BulletBillsStart": FullScreenMario.FullScreenMario.prototype.macroBulletBillsStart,
         // macroBulletBillsStart(reference) {
         //     return {

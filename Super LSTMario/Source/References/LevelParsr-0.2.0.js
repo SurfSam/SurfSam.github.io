@@ -6,9 +6,9 @@ var LevelParsr;
             this.RELEVANT_THINGS = ["Air", "Floor", "Block", "Brick", "Goomba", "Pipe", "PipePiranha", "Koopa", "Stone", "CastleSmall", "Coin",
                 "PlatformGeneratorUp", "PlatformGeneratorDown", "TreeTop", "TreeTrunk", "TreeTrunkSolid", "Platform", "PlatformFloating", "PlatformSliding", "PlatformFalling", "PlatformTrack", "Scale", "CastleLarge", "Water", "CastleBlock", "CastleBridge", "Bowser", "CastleAxe",
                 "Springboard", "Blooper", "CheepCheep", "BridgeBase", "Railing", "Podoboo", "HammerBro", "Lakitu", "Beetle", "ShroomTop", "ShroomTrunk", "Cannon",
-                "StartInsideCastle", "EndInsideCastle", "EndOutsideCastle", "CastleBlockFireBalls"];
+                "StartInsideCastle", "EndInsideCastle", "EndOutsideCastle", "CastleBlockFireBalls", "CheepsStart", "CheepsStop"];
             this.RELEVANT_MACROS = ["Floor", "Pipe", "Fill", "Ceiling", "PlatformGenerator", "Tree", "Water", "StartInsideCastle",
-                "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge"];
+                "EndInsideCastle", "EndOutsideCastle", "CastleSmall", "CastleLarge", "Scale", "Shroom", "Bridge", "CheepsStart", "CheepsStop"];
             this.CONTENTS = ["Mushroom", "Mushroom1Up", "Coin", "Star", "Vine", "HiddenCoin"];
             this.ORDER = ["TreeTrunk", "TreeTrunkSolid", "TreeTop"];
             this.macros = {
@@ -24,8 +24,8 @@ var LevelParsr;
                 "Bridge": this.macroBridge,
                 "Scale": this._coordsScale,
                 "PlatformGenerator": this._coordsPlatformGenerator,
-                // "CheepsStart": macroCheepsStart,
-                // "CheepsStop": macroCheepsStop,
+                "CheepsStart": this.macroCheepsStart,
+                "CheepsStop": this.macroCheepsStop,
                 // "BulletBillsStart": macroBulletBillsStart,
                 // "BulletBillsStop": macroBulletBillsStop,
                 // "LakituStop": macroLakituStop,
@@ -663,6 +663,24 @@ var LevelParsr;
                     "y": y
                 }];
         };
+        // "CheepsStart": FullScreenMario.FullScreenMario.prototype.macroCheepsStart,
+        LevelParsr.prototype.macroCheepsStart = function (reference, FSM) {
+            return [{
+                    "thing": "CheepsStart",
+                    "x": reference.x || 0,
+                    "y": FSM.MapScreener.floor
+                }];
+        };
+        ;
+        // "CheepsStop": FullScreenMario.FullScreenMario.prototype.macroCheepsStop,
+        LevelParsr.prototype.macroCheepsStop = function (reference, FSM) {
+            return [{
+                    "thing": "CheepsStop",
+                    "x": reference.x || 0,
+                    "y": FSM.MapScreener.floor
+                }];
+        };
+        ;
         return LevelParsr;
     })();
     LevelParsr_1.LevelParsr = LevelParsr;
