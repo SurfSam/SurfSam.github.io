@@ -16,20 +16,22 @@ from flask import request, jsonify
 from random import randrange
 
 SLICE_LENGTH = 14
-MAX_ID = 51
+MAX_ID = 55
 
 DATA_TYPE = "original"
+FILTER_DATA = False
 
-CLUSTER_LENGTH = 12
+CLUSTER_LENGTH = 5
 
-N_EPOCHS = 600
+N_EPOCHS = 1000
 
 MIN_SLICES = 50
 VARIETY_MARGIN = 1
 
-SAVE_PATH = '../saves/'
-FILENAME = 'LSTMariov8.' + DATA_TYPE + '.CL' + str(CLUSTER_LENGTH) + '.h5'
+SAVE_PATH = './Super LSTMario/Source/LSTM/saves/'
+FILENAME = f'LSTMariov8.2.{DATA_TYPE}.CL{str(CLUSTER_LENGTH)}{".FILTERED" if FILTER_DATA else ""}.h5'
 MODEL = None
+
 
 def read_data(path):
     slice_files = os.listdir(path)
@@ -56,32 +58,34 @@ def read_data(path):
             data = np.array(area[i:i+CLUSTER_LENGTH-1])
             label = np.array(area[i+CLUSTER_LENGTH])
 
-            # filter out slices with not enough variation
-            # by comparing the slice avg to the label
-            # grab the average within each horizontal array
-            data_avg = np.average(data, axis=0)
-            # label_avg = np.average(label, axis=0)
+            if FILTER_DATA:
+                # filter out slices with not enough variation
+                # by comparing the slice avg to the label
+                # grab the average within each horizontal array
+                data_avg = np.average(data, axis=0)
+                # label_avg = np.average(label, axis=0)
 
-            variety = np.linalg.norm(data_avg - label)
+                variety = np.linalg.norm(data_avg - label)
 
-            # subtract the label from the data_average and get the magnitude of the resulting vector
-            if variety >= VARIETY_MARGIN:
-                # divide by MAX_ID for 0-1 range
-                data = np.divide(data, MAX_ID)
-                label = np.divide(label, MAX_ID)
+                # subtract the label from the data_average and get the magnitude of the resulting vector
+                if variety < VARIETY_MARGIN:
+                    filtered_count += 1
+                    continue
 
-                # add data and label to array
-                clustered_data.append(tf.reshape(
-                    data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
-                clustered_labels.append(tf.reshape(
-                    label, [SLICE_LENGTH]))
-            else:
-                filtered_count += 1
-                # print('Sorted out', data, label, variety)
+            # divide by MAX_ID for 0-1 range
+            data = np.divide(data, MAX_ID)
+            label = np.divide(label, MAX_ID)
+
+            # add data and label to array
+            clustered_data.append(tf.reshape(
+                data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
+            clustered_labels.append(tf.reshape(
+                label, [SLICE_LENGTH]))
 
     print('Loaded', len(clustered_data), 'clusters, discarded', filtered_count)
 
     return np.asarray(clustered_data), np.asarray(clustered_labels)
+
 
 def plotHistory(history):
     # summarize history for accuracy
@@ -102,6 +106,7 @@ def plotHistory(history):
     # plt.legend(['train', 'test'], loc='upper left')
     plt.show()
 
+
 # read clusters and labels
 clustered_data, clustered_labels = read_data(
     './Super LSTMario/Source/LSTM/' + DATA_TYPE + '_data')
@@ -120,7 +125,7 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
 
     MODEL = keras.Sequential()
 
-    MODEL.add(layers.Input((CLUSTER_LENGTH - 1, SLICE_LENGTH)))
+    MODEL.add(layers.Input((CLUSTER_LENGTH-1, SLICE_LENGTH)))
 
     MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
     # MODEL.add(layers.Dropout(0.2))
@@ -134,13 +139,6 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     # Dense layer with SLICE_LENGTH as output
     MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
 
-
-    # MODEL.add(layers.Dense(128))
-
-    # MODEL.add(layers.Dense(128))
-
-    # MODEL.add(layers.LSTM(SLICE_LENGTH, activation='relu', input_shape=(INPUT_WIDTH, SLICE_LENGTH), return_sequences=True))
-
     MODEL.compile(loss='mse',
                   optimizer=keras.optimizers.Adam(
                       learning_rate=1e-3, decay=1e-5),
@@ -150,7 +148,7 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
 
     # train model
     history = MODEL.fit(x=clustered_data, y=clustered_labels, epochs=N_EPOCHS)
-    
+
     # save model
     MODEL.save(SAVE_PATH + FILENAME)
 
@@ -181,16 +179,17 @@ else:
         level = last_result
 
         for _ in range(0, randrange(100, 400)):
-            
+
             # slice the last INPUT_WIDTH digits off the level generated thus far as a new input for the prediction
             lr_len = len(level)
-            input_slice = level[lr_len - INPUT_WIDTH:lr_len]
+            input_slice = level[lr_len - CLUSTER_LENGTH + 1:lr_len]
 
-            print(input_slice, np.shape(input_slice))
+            # print(input_slice, np.shape(input_slice))
 
-            reshaped = tf.reshape(input_slice, [INPUT_WIDTH, SLICE_LENGTH])
+            reshaped = tf.reshape(
+                input_slice, [1, CLUSTER_LENGTH - 1, SLICE_LENGTH])
 
-            print(reshaped, np.shape(reshaped))
+            # print(reshaped, np.shape(reshaped))
             # generate new output
             # reshape input_slice to fit requirements and get new prediction
             prediction = MODEL.predict(reshaped)
@@ -201,6 +200,14 @@ else:
             # append last_result to level sequence
             level = np.append(level, last_result, axis=0)
 
-        return jsonify((np.round(level * MAX_ID)).tolist())
-    
+        return jsonify({'name': "LSTMario", 'data': (np.round(level * MAX_ID)).tolist() })
+
+    @app.route('/<original_level>', methods=['GET'])
+    def fetch_original(original_level):
+
+        original_level = original_level.replace('.', '-')
+        f = open('./Super LSTMario/Source/LSTM/original_data/' +
+                 original_level + "-0.json")
+
+        return jsonify({'name': original_level, 'data': json.load(f)})
     app.run()
