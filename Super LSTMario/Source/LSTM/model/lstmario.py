@@ -18,10 +18,10 @@ from random import randrange
 SLICE_LENGTH = 14
 MAX_ID = 55
 
-DATA_TYPE = "original"
-FILTER_DATA = False
+DATA_TYPE = "random"
+FILTER_DATA = True
 
-CLUSTER_LENGTH = 5
+CLUSTER_LENGTH = 12
 
 N_EPOCHS = 1000
 
@@ -29,7 +29,7 @@ MIN_SLICES = 50
 VARIETY_MARGIN = 1
 
 SAVE_PATH = './Super LSTMario/Source/LSTM/saves/'
-FILENAME = f'LSTMariov8.2.{DATA_TYPE}.CL{str(CLUSTER_LENGTH)}{".FILTERED" if FILTER_DATA else ""}.h5'
+FILENAME = f'LSTMariov9.{DATA_TYPE}.CL{str(CLUSTER_LENGTH)}{".FILTERED" if FILTER_DATA else ""}.h5'
 MODEL = None
 
 
@@ -65,6 +65,7 @@ def read_data(path):
                 data_avg = np.average(data, axis=0)
                 # label_avg = np.average(label, axis=0)
 
+                # print(data_avg, label)
                 variety = np.linalg.norm(data_avg - label)
 
                 # subtract the label from the data_average and get the magnitude of the resulting vector
@@ -127,14 +128,17 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
 
     MODEL.add(layers.Input((CLUSTER_LENGTH-1, SLICE_LENGTH)))
 
-    MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
+    MODEL.add(layers.Dense((CLUSTER_LENGTH - 1) * SLICE_LENGTH))
+    MODEL.add(layers.Dense((CLUSTER_LENGTH - 1) * SLICE_LENGTH * 2))
+    # MODEL.add(layers.LSTM(128, activation='relu', return_sequences=True))
     # MODEL.add(layers.Dropout(0.2))
 
-    MODEL.add(layers.LSTM(128, activation='relu'))
+    MODEL.add(layers.LSTM(256, activation='relu'))
     # MODEL.add(layers.Dropout(0.2))
 
+    # MODEL.add(layers.Dense(SLICE_LENGTH * 2, activation='relu'))
+    # MODEL.add(layers.Dropout(0.2))
     MODEL.add(layers.Dense(SLICE_LENGTH * 2, activation='relu'))
-    # MODEL.add(layers.Dropout(0.2))
 
     # Dense layer with SLICE_LENGTH as output
     MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
