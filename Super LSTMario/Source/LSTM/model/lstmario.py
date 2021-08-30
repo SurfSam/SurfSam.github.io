@@ -13,13 +13,13 @@ import flask
 from flask_cors import CORS, cross_origin
 
 from flask import request, jsonify
-from random import randrange
+import random
 
 SLICE_LENGTH = 14
 MAX_ID = 55
 
 DATA_TYPE = "random"
-FILTER_DATA = True
+FILTER_DATA = False
 
 CLUSTER_LENGTH = 12
 
@@ -36,57 +36,73 @@ MODEL = None
 def read_data(path):
     slice_files = os.listdir(path)
 
-    read_data = []
-
-    for file in slice_files:
-        f = open(path + '/' + file)
-
-        data = json.load(f)
-
-        # min amount of slices = 50
-        if len(data) >= MIN_SLICES:
-            read_data.append(data)
-
     clustered_data = []
     clustered_labels = []
     filtered_count = 0
-    for area in read_data:
 
-        for i in range(0, len(area)-CLUSTER_LENGTH):
+    for file in slice_files:
+        data, labels, filtered = process_file(path + '/' + file)
 
-            # split into data and label
-            data = np.array(area[i:i+CLUSTER_LENGTH-1])
-            label = np.array(area[i+CLUSTER_LENGTH])
-
-            if FILTER_DATA:
-                # filter out slices with not enough variation
-                # by comparing the slice avg to the label
-                # grab the average within each horizontal array
-                data_avg = np.average(data, axis=0)
-                # label_avg = np.average(label, axis=0)
-
-                # print(data_avg, label)
-                variety = np.linalg.norm(data_avg - label)
-
-                # subtract the label from the data_average and get the magnitude of the resulting vector
-                if variety < VARIETY_MARGIN:
-                    filtered_count += 1
-                    continue
-
-            # divide by MAX_ID for 0-1 range
-            data = np.divide(data, MAX_ID)
-            label = np.divide(label, MAX_ID)
-
-            # add data and label to array
-            clustered_data.append(tf.reshape(
-                data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
-            clustered_labels.append(tf.reshape(
-                label, [SLICE_LENGTH]))
+        if data:
+            # need to initiate arrays with proper shape for vstack to work
+            # (np.empty didn't work as it initializes with gibberish and we'd append to that)
+            if len(clustered_data) == 0:
+                clustered_data = data
+                clustered_labels = labels
+                filtered_count = filtered
+            else:
+                clustered_data = np.vstack((clustered_data, data))
+                clustered_labels = np.vstack((clustered_labels, labels))
+                filtered_count += filtered
 
     print('Loaded', len(clustered_data), 'clusters, discarded', filtered_count)
 
-    return np.asarray(clustered_data), np.asarray(clustered_labels)
+    return clustered_data, clustered_labels
 
+def process_file(path):
+    f = open(path)
+
+    read_data = json.load(f)
+
+    # min amount of slices = 50
+    if len(read_data) < MIN_SLICES:
+        return None, None, None
+
+    data = []
+    labels = []
+    filtered_count = 0
+
+    for i in range(0, len(read_data)-CLUSTER_LENGTH):
+
+        # split into data and label
+        _data = np.array(read_data[i:i+CLUSTER_LENGTH-1])
+        _label = np.array(read_data[i+CLUSTER_LENGTH])
+
+        if FILTER_DATA:
+            # filter out slices with not enough variation
+            # by comparing the slice avg to the label
+            # grab the average within each horizontal array
+            data_avg = np.average(_data, axis=0)
+            # label_avg = np.average(label, axis=0)
+
+            # print(data_avg, label)
+            variety = np.linalg.norm(data_avg - _label)
+
+            # subtract the label from the data_average and get the magnitude of the resulting vector
+            if variety < VARIETY_MARGIN:
+                filtered_count += 1
+                continue
+
+        # divide by MAX_ID for 0-1 range
+        _data = np.divide(_data, MAX_ID)
+        _label = np.divide(_label, MAX_ID)
+
+        # add data and label to array
+        data.append(tf.reshape(_data, [CLUSTER_LENGTH - 1, SLICE_LENGTH]))
+        labels.append(tf.reshape(_label, [SLICE_LENGTH]))
+
+    return data, labels, filtered_count
+    
 
 def plotHistory(history):
     # summarize history for accuracy
@@ -107,20 +123,17 @@ def plotHistory(history):
     # plt.legend(['train', 'test'], loc='upper left')
     plt.show()
 
-
-# read clusters and labels
-clustered_data, clustered_labels = read_data(
-    './Super LSTMario/Source/LSTM/' + DATA_TYPE + '_data')
-
-# if no saved model exists -> train a new one
-if not os.path.isfile(SAVE_PATH + FILENAME):
+def train_model():
+    # read clusters and labels
+    clustered_data, clustered_labels = read_data(
+        './Super LSTMario/Source/LSTM/' + DATA_TYPE + '_data')
 
     # # create dataset from clusters and labels
     # train_data = tf.data.Dataset.from_tensor_slices(
     #     (clustered_data, clustered_labels))
 
     print('Shapes -- Data:', clustered_data.shape,
-          '-- Labels:', clustered_labels.shape)
+        '-- Labels:', clustered_labels.shape)
     # shuffle data
     # train_data = train_data.shuffle(10)
 
@@ -144,9 +157,9 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     MODEL.add(layers.Dense(SLICE_LENGTH, activation='relu'))
 
     MODEL.compile(loss='mse',
-                  optimizer=keras.optimizers.Adam(
-                      learning_rate=1e-3, decay=1e-5),
-                  metrics=['accuracy'])
+                optimizer=keras.optimizers.Adam(
+                    learning_rate=1e-3, decay=1e-5),
+                metrics=['accuracy'])
 
     MODEL.summary()
 
@@ -159,9 +172,27 @@ if not os.path.isfile(SAVE_PATH + FILENAME):
     plotHistory(history)
     print('Saved model', FILENAME)
 
-# if it does exist -> create the backend for requests
-else:
+def read_random_file(path):
+    
+    # load dir
+    files = os.listdir(path)
 
+    # random file might not exceed MIN_SLICES -> loop until sufficient file was picked
+    data = None
+    file = None
+    while(data == None):
+
+        # pick random file
+        file = random.choice(files)
+        # process it
+        data, _, _ = process_file(path + '/' + file)
+
+    print('Picked', file)
+    # return data
+    return data
+
+def run_backend():
+    
     MODEL = keras.models.load_model(SAVE_PATH + FILENAME)
     print("Loaded existing model", FILENAME)
     MODEL.summary()
@@ -179,10 +210,11 @@ else:
         if(MODEL == None):
             return 'Model not loaded'
 
-        last_result = clustered_data[0]
+        random_data = read_random_file('./Super LSTMario/Source/LSTM/' + DATA_TYPE + '_data')
+        last_result = random_data[0]
         level = last_result
 
-        for _ in range(0, randrange(100, 400)):
+        for _ in range(0, random.randrange(100, 400)):
 
             # slice the last INPUT_WIDTH digits off the level generated thus far as a new input for the prediction
             lr_len = len(level)
@@ -211,7 +243,19 @@ else:
 
         original_level = original_level.replace('.', '-')
         f = open('./Super LSTMario/Source/LSTM/original_data/' +
-                 original_level + "-0.json")
+                original_level + "-0.json")
 
         return jsonify({'name': original_level, 'data': json.load(f)})
     app.run()
+
+def main():
+    # if no saved model exists -> train a new one
+    if not os.path.isfile(SAVE_PATH + FILENAME):
+        train_model()
+
+    # if it does exist -> create the backend for requests
+    else:
+        run_backend()
+
+if __name__ == "__main__":
+    main()
